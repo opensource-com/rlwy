@@ -198,6 +198,44 @@ impl Railway {
         Ok(data.projects.into_vec())
     }
 
+    pub async fn deployments_for_service(
+        &self,
+        project_id: &str,
+        env_id: Option<&str>,
+        service_id: &str,
+        limit: i32,
+    ) -> Result<Vec<Deployment>> {
+        #[derive(Deserialize)]
+        struct Data {
+            deployments: Connection<Deployment>,
+        }
+        let q = r#"
+            query($input: DeploymentListInput!, $first: Int) {
+              deployments(input: $input, first: $first) {
+                edges {
+                  node {
+                    id
+                    status
+                    createdAt
+                    staticUrl
+                    meta
+                    environmentId
+                  }
+                }
+              }
+            }
+        "#;
+        let input = json!({
+            "projectId": project_id,
+            "serviceId": service_id,
+            "environmentId": env_id,
+        });
+        let data: Data = self
+            .graphql(q, json!({ "input": input, "first": limit }))
+            .await?;
+        Ok(data.deployments.into_vec())
+    }
+
     pub async fn variables(
         &self,
         project_id: &str,
@@ -228,6 +266,20 @@ impl Railway {
             )
             .await?;
         Ok(data.variables)
+    }
+
+    pub async fn rollback_to_deployment(&self, deployment_id: &str) -> Result<Deployment> {
+        #[derive(Deserialize)]
+        struct Data { #[serde(rename = "deploymentRollback")] dep: Deployment }
+        let q = r#"
+            mutation($id: String!) {
+              deploymentRollback(id: $id) {
+                id status createdAt staticUrl meta environmentId
+              }
+            }
+        "#;
+        let data: Data = self.graphql(q, json!({ "id": deployment_id })).await?;
+        Ok(data.dep)
     }
 
     pub async fn redeploy_deployment(&self, deployment_id: &str) -> Result<Deployment> {

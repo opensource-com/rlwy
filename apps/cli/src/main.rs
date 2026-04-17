@@ -3,7 +3,8 @@ mod commands;
 mod config;
 mod ui;
 
-use clap::{Parser, Subcommand};
+use clap::{CommandFactory, Parser, Subcommand};
+use clap_complete::Shell;
 
 #[derive(Subcommand)]
 enum EnvCmd {
@@ -105,6 +106,20 @@ enum Cmd {
         #[command(subcommand)]
         action: EnvCmd,
     },
+    /// List recent deployments for a service (newest first)
+    Deployments {
+        /// Service id, name, or `project/service`. Omit to use the last choice
+        query: Option<String>,
+        /// Always open the picker
+        #[arg(long)]
+        pick: bool,
+        /// Target a specific environment by name
+        #[arg(long)]
+        env: Option<String>,
+        /// How many deployments to fetch
+        #[arg(long, default_value_t = 20)]
+        limit: i32,
+    },
     /// Open the Railway dashboard for a service in your browser
     Open {
         /// Service id, name, or `project/service`. Omit to use the last choice
@@ -115,6 +130,26 @@ enum Cmd {
         /// Target a specific environment by name
         #[arg(long)]
         env: Option<String>,
+    },
+    /// Roll a service back to an earlier deployment
+    Rollback {
+        /// Service id, name, or `project/service`. Omit to use the last choice
+        query: Option<String>,
+        /// Always open the picker
+        #[arg(long)]
+        pick: bool,
+        /// Don't tail the new deployment after triggering
+        #[arg(long)]
+        no_watch: bool,
+        /// Target a specific environment by name
+        #[arg(long)]
+        env: Option<String>,
+        /// Specific deployment id or commit-sha prefix to roll back to. Omit to pick interactively
+        #[arg(long)]
+        to: Option<String>,
+        /// How many historical deployments to search through
+        #[arg(long, default_value_t = 20)]
+        limit: i32,
     },
     /// Trigger a new deployment by redeploying the latest one
     Redeploy {
@@ -140,6 +175,11 @@ enum Cmd {
     },
     /// Download and install the latest rlwy release
     Upgrade,
+    /// Print a shell completion script to stdout
+    Completions {
+        /// Shell to generate completions for
+        shell: Shell,
+    },
 }
 
 #[tokio::main]
@@ -167,11 +207,23 @@ async fn main() -> anyhow::Result<()> {
                 commands::env::get(name, query, pick, env).await
             }
         },
+        Cmd::Deployments { query, pick, env, limit } => {
+            commands::deployments::run(query, pick, env, limit).await
+        }
         Cmd::Open { query, pick, env } => commands::open::run(query, pick, env).await,
         Cmd::Redeploy { query, pick, no_watch, env } => {
             commands::redeploy::run(query, pick, no_watch, env).await
         }
+        Cmd::Rollback { query, pick, no_watch, env, to, limit } => {
+            commands::rollback::run(query, pick, no_watch, env, to, limit).await
+        }
         Cmd::Status { project, all } => commands::status::run(project, all).await,
         Cmd::Upgrade => commands::upgrade::run().await,
+        Cmd::Completions { shell } => {
+            let mut cmd = Cli::command();
+            let bin = cmd.get_name().to_string();
+            clap_complete::generate(shell, &mut cmd, bin, &mut std::io::stdout());
+            Ok(())
+        }
     }
 }

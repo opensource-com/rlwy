@@ -40,9 +40,12 @@ Also available as `rlwycli`, `railwaycli`, and `railwycli` — same binary, pick
 | `rlwy env ls [QUERY]`      | Read-only list of a service's environment variables. `--env <name>` targets a specific environment, `--keys-only` prints just the names (pipe-friendly). |
 | `rlwy env get NAME [QUERY]`| Print a single variable's value to stdout. Example: `export DB_URL=$(rlwy env get DATABASE_URL frontend)`. Exits non-zero if the variable is missing. |
 | `rlwy open [QUERY]`        | Open the Railway dashboard for a service in your browser. Same resolution/`--env` flags as the other commands. |
+| `rlwy deployments [QUERY]` | List the last N deployments (status, created, commit, author, message, id). `--limit 50` to see more, `--env` for a specific env. |
+| `rlwy rollback [QUERY]`    | Roll a service back to an earlier deployment. Defaults to the most recent earlier SUCCESS; `--to <id\|sha>` picks a specific one. Interactive picker when multiple candidates exist. Tails the new deployment just like `redeploy`. |
 | `rlwy redeploy [QUERY]`    | Re-trigger the latest deployment of a service and tail it. Same resolution as `watch`/`logs`; add `--no-watch` to just trigger. |
 | `rlwy status [PROJECT]`    | One-line health summary + any broken (FAILED/CRASHED) services. Exits non-zero when anything is broken — good for CI or shell prompts. `--all` also lists in-progress deploys. |
 | `rlwy upgrade`             | Fetch the latest GitHub release and replace your binary    |
+| `rlwy completions SHELL`   | Print a bash/zsh/fish/powershell/elvish completion script to stdout (e.g. `rlwy completions zsh > ~/.zsh/completions/_rlwy`). |
 
 ## Dev
 

@@ -12,6 +12,22 @@ the CLI will actually notice after upgrading. Group entries under **Added**,
 ## [Unreleased]
 
 ### Added
+- `rlwy completions <SHELL>`: prints a bash/zsh/fish/powershell/elvish
+  completion script to stdout (clap_complete generates from the actual
+  argument tree, so every subcommand/flag/env/pick option completes).
+  Example: `rlwy completions zsh > ~/.zsh/completions/_rlwy`.
+- `rlwy deployments [QUERY]`: list the last N deployments of a service
+  (status, created, short sha, author, message, id). `--limit N` to
+  change how many, `--env <name>` to scope to a specific env. Queries
+  Railway's top-level `deployments(input: DeploymentListInput)` with
+  `projectId + serviceId + environmentId` filters.
+- `rlwy rollback [QUERY]`: rolls a service back to an earlier deployment
+  via Railway's `deploymentRollback` mutation. Defaults to the most
+  recent earlier SUCCESS deployment; `--to <id|sha-prefix>` picks one
+  explicitly; when multiple candidates exist, a fuzzy picker shows
+  sha+commit-message. Tails the resulting deployment just like
+  `rlwy redeploy`, and inherits the same `--no-watch`, `--env`, `--pick`
+  flags.
 - `rlwy status [PROJECT]`: one-line health summary (`✓ 27/30 services up`)
   plus a list of any FAILED/CRASHED services, suitable for shell prompts
   or CI. Exits non-zero when anything is broken. Optional project-name
