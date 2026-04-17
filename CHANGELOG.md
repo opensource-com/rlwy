@@ -24,12 +24,15 @@ the CLI will actually notice after upgrading. Group entries under **Added**,
 - `rlwy ls` table now includes an AUTHOR column showing who made the
   commit for the latest deployment (pulled from Railway's deployment
   metadata, truncated to 18 chars).
-- `rlwy ls` now classifies each service as `web` or `data` based on
-  whether its latest deployment has a commit (databases, caches, and
-  other non-deployable services get `data`). Rows are sorted web-first,
-  and `data` rows are dimmed — so web services stand out visually and
-  you no longer have to scan the table to tell which row is a Postgres
-  vs a Node service.
+- `rlwy ls` now classifies each service by type: `web`, `postgres`,
+  `redis`, `mysql`, `mongo`, `clickhouse`, `memcached`, `image`, or
+  `data`. The TYPE is inferred from the deployment image (if present in
+  Railway's deployment meta) or falls back to a service-name pattern
+  match — so Railway-template databases like "Postgres", "Redis-4QR1",
+  "Primary DB Mongo" all get tagged correctly even though they carry no
+  commits. Each type gets a distinct color (postgres=blue,
+  redis=red, mysql=yellow, mongo=green, …). Rows are sorted web first,
+  then by type, so actionable services stand out.
 - `rlwy watch` picker is now a fuzzy search — type any part of a service
   or project name to narrow the list, arrow keys + Enter to pick.
 - `rlwy watch` accepts a query arg: a service id (UUID), a service name

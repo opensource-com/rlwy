@@ -253,6 +253,10 @@ impl Deployment {
     pub fn commit_author(&self) -> Option<&str> {
         self.meta.as_ref()?.get("commitAuthor")?.as_str()
     }
+
+    pub fn image(&self) -> Option<&str> {
+        self.meta.as_ref()?.get("image")?.as_str()
+    }
 }
 
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq)]

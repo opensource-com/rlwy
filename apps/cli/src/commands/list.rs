@@ -2,31 +2,56 @@ use crate::api::{Deployment, Project, Railway, Service};
 use crate::config;
 use crate::ui;
 use anyhow::{Result, bail};
-use colored::Colorize;
+use colored::{ColoredString, Colorize};
 use tabled::settings::Style;
 use tabled::{Table, Tabled};
 
 const MESSAGE_MAX: usize = 56;
 const AUTHOR_MAX: usize = 18;
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 enum Kind {
     Web,
+    Postgres,
+    Redis,
+    Mysql,
+    Mongo,
+    Clickhouse,
+    Memcached,
+    Image,
     Data,
 }
 
 impl Kind {
-    fn label(self) -> String {
+    fn label(self) -> ColoredString {
         match self {
-            Self::Web => "web".cyan().to_string(),
-            Self::Data => "data".dimmed().to_string(),
+            Self::Web => "web".cyan(),
+            Self::Postgres => "postgres".blue().bold(),
+            Self::Redis => "redis".red().bold(),
+            Self::Mysql => "mysql".yellow().bold(),
+            Self::Mongo => "mongo".green().bold(),
+            Self::Clickhouse => "clickhouse".magenta().bold(),
+            Self::Memcached => "memcached".bright_magenta().bold(),
+            Self::Image => "image".dimmed(),
+            Self::Data => "data".dimmed(),
         }
+    }
+
+    fn is_web(self) -> bool {
+        matches!(self, Self::Web)
     }
 
     fn sort_key(self) -> u8 {
         match self {
             Self::Web => 0,
-            Self::Data => 1,
+            Self::Postgres => 1,
+            Self::Redis => 2,
+            Self::Mysql => 3,
+            Self::Mongo => 4,
+            Self::Clickhouse => 5,
+            Self::Memcached => 6,
+            Self::Image => 7,
+            Self::Data => 8,
         }
     }
 }
@@ -117,7 +142,7 @@ fn print_project_header(project: &Project) {
 
 fn build_row(svc: &Service) -> (Kind, Row) {
     let d = svc.latest_deployment();
-    let kind = classify(d);
+    let kind = classify(svc, d);
 
     let (status, commit, author, message) = match d {
         Some(d) => (
@@ -134,16 +159,17 @@ fn build_row(svc: &Service) -> (Kind, Row) {
         ),
     };
 
-    let service_cell = match kind {
-        Kind::Web => svc.name.clone(),
-        Kind::Data => svc.name.dimmed().to_string(),
+    let service_cell = if kind.is_web() {
+        svc.name.clone()
+    } else {
+        svc.name.dimmed().to_string()
     };
 
     (
         kind,
         Row {
             service: service_cell,
-            kind: kind.label(),
+            kind: kind.label().to_string(),
             status,
             commit,
             author,
@@ -152,10 +178,53 @@ fn build_row(svc: &Service) -> (Kind, Row) {
     )
 }
 
-fn classify(d: Option<&Deployment>) -> Kind {
-    match d.and_then(|d| d.commit_hash()) {
-        Some(h) if !h.is_empty() => Kind::Web,
-        _ => Kind::Data,
+fn classify(svc: &Service, d: Option<&Deployment>) -> Kind {
+    if let Some(d) = d {
+        if d.commit_hash().map(|h| !h.is_empty()).unwrap_or(false) {
+            return Kind::Web;
+        }
+        if let Some(img) = d.image() {
+            return image_to_kind(img);
+        }
+    }
+    name_to_kind(&svc.name)
+}
+
+fn image_to_kind(raw: &str) -> Kind {
+    let s = raw.to_ascii_lowercase();
+    if s.contains("postgres") || s.contains("postgis") {
+        Kind::Postgres
+    } else if s.contains("redis") || s.contains("dragonfly") || s.contains("keydb") {
+        Kind::Redis
+    } else if s.contains("mysql") || s.contains("mariadb") {
+        Kind::Mysql
+    } else if s.contains("mongo") {
+        Kind::Mongo
+    } else if s.contains("clickhouse") {
+        Kind::Clickhouse
+    } else if s.contains("memcached") {
+        Kind::Memcached
+    } else {
+        Kind::Image
+    }
+}
+
+fn name_to_kind(name: &str) -> Kind {
+    let s = name.to_ascii_lowercase();
+    if s.contains("postgres") || s.contains("postgis") {
+        Kind::Postgres
+    } else if s.contains("redis") {
+        Kind::Redis
+    } else if s.contains("mysql") || s.contains("mariadb") {
+        Kind::Mysql
+    } else if s.contains("mongo") {
+        Kind::Mongo
+    } else if s.contains("clickhouse") {
+        Kind::Clickhouse
+    } else if s.contains("memcached") {
+        Kind::Memcached
+    } else {
+        Kind::Data
     }
 }
 
@@ -202,27 +271,50 @@ mod tests {
     use super::*;
 
     #[test]
+    fn name_classifies_common_databases() {
+        assert_eq!(name_to_kind("Postgres"), Kind::Postgres);
+        assert_eq!(name_to_kind("Primary DB Postgres"), Kind::Postgres);
+        assert_eq!(name_to_kind("Redis-4QR1"), Kind::Redis);
+        assert_eq!(name_to_kind("MySQL"), Kind::Mysql);
+        assert_eq!(name_to_kind("mariadb-prod"), Kind::Mysql);
+        assert_eq!(name_to_kind("MongoDB"), Kind::Mongo);
+        assert_eq!(name_to_kind("tokens"), Kind::Data);
+    }
+
+    #[test]
+    fn image_classifies_common_databases() {
+        assert_eq!(image_to_kind("postgres:15"), Kind::Postgres);
+        assert_eq!(
+            image_to_kind("ghcr.io/railwayapp-templates/postgres-ssl:latest"),
+            Kind::Postgres
+        );
+        assert_eq!(image_to_kind("bitnami/redis:7"), Kind::Redis);
+        assert_eq!(image_to_kind("dragonflydb/dragonfly"), Kind::Redis);
+        assert_eq!(image_to_kind("nginx:alpine"), Kind::Image);
+    }
+
+    #[test]
     fn renders_table_with_sample_rows() {
         let rows = vec![
             Row {
                 service: "api".into(),
-                kind: "web".cyan().to_string(),
+                kind: Kind::Web.label().to_string(),
                 status: "SUCCESS".green().to_string(),
                 commit: "a1b2c3d".cyan().to_string(),
                 author: "Alice".into(),
                 message: "fix: retry on 502".into(),
             },
             Row {
-                service: "worker".into(),
-                kind: "web".cyan().to_string(),
-                status: "BUILDING".cyan().to_string(),
-                commit: "4e5f6a7".cyan().to_string(),
-                author: "Bob".into(),
-                message: "feat: add queue metrics".into(),
+                service: "Postgres".dimmed().to_string(),
+                kind: Kind::Postgres.label().to_string(),
+                status: "SUCCESS".green().to_string(),
+                commit: em_dash(),
+                author: em_dash(),
+                message: em_dash(),
             },
             Row {
-                service: "Postgres".dimmed().to_string(),
-                kind: "data".dimmed().to_string(),
+                service: "Redis-4QR1".dimmed().to_string(),
+                kind: Kind::Redis.label().to_string(),
                 status: "SUCCESS".green().to_string(),
                 commit: em_dash(),
                 author: em_dash(),
@@ -236,6 +328,7 @@ mod tests {
         assert!(out.contains("TYPE"));
         assert!(out.contains("api"));
         assert!(out.contains("Postgres"));
+        assert!(out.contains("Redis"));
         eprintln!("{out}");
     }
 }
