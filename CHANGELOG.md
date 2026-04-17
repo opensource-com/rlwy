@@ -11,6 +11,8 @@ the CLI will actually notice after upgrading. Group entries under **Added**,
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-04-18
+
 ### Changed
 - `rlwy logs` now accepts a service name / id / `project/service` query
   (same syntax as `rlwy watch`) and fetches the latest deployment's logs
