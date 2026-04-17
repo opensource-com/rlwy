@@ -1,0 +1,32 @@
+{
+  "name": "rlwy",
+  "version": "0.1.0",
+  "description": "Watch Railway deployments from your terminal — Rust core delivered over npm",
+  "keywords": ["railway", "deployment", "cli", "monitor"],
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "rlwy": "bin/rlwy.js"
+  },
+  "files": [
+    "bin/",
+    "dist/",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "postinstall": "node ./dist/install.js || true",
+    "prepublishOnly": "npm run build"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "typescript": "latest",
+    "@types/node": "latest"
+  },
+  "rlwy": {
+    "binaryVersion": "0.1.0",
+    "releaseBaseUrl": "https://github.com/opensource-com/rlwy/releases/download"
+  }
+}

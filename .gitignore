@@ -1,0 +1,9 @@
+node_modules
+dist
+target
+.nx/cache
+.nx/workspace-data
+*.log
+.DS_Store
+.env
+.env.local

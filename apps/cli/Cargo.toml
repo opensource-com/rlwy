@@ -1,0 +1,31 @@
+[package]
+name = "rlwy"
+version = "0.1.0"
+edition = "2024"
+description = "Watch Railway deployments from your terminal"
+license = "MIT"
+
+[[bin]]
+name = "rlwy"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "time", "signal"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"
+thiserror = "2"
+colored = "3"
+indicatif = "0.18"
+directories = "6"
+chrono = { version = "0.4", default-features = false, features = ["clock", "serde"] }
+dialoguer = { version = "0.12", default-features = false, features = ["password"] }
+dotenvy = "0.15"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true
+opt-level = 3

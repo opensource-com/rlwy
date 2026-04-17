@@ -1,0 +1,5 @@
+src/
+tsconfig.json
+project.json
+*.ts
+!dist/*.d.ts
