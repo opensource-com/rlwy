@@ -1,7 +1,7 @@
 use crate::api::{Deployment, Project, Railway};
 use crate::config;
 use crate::ui;
-use anyhow::Result;
+use anyhow::{Result, bail};
 use colored::Colorize;
 use tabled::settings::Style;
 use tabled::{Table, Tabled};
@@ -20,12 +20,12 @@ struct Row {
     message: String,
 }
 
-pub async fn run() -> Result<()> {
+pub async fn run(query: Option<String>) -> Result<()> {
     let token = config::require_token()?;
     let api = Railway::new(token)?;
-    let projects = api.projects().await?;
+    let all_projects = api.projects().await?;
 
-    if projects.is_empty() {
+    if all_projects.is_empty() {
         println!(
             "{} no projects found for this token",
             "!".yellow().bold()
@@ -33,9 +33,25 @@ pub async fn run() -> Result<()> {
         return Ok(());
     }
 
+    let projects: Vec<&Project> = match query.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+        None => all_projects.iter().collect(),
+        Some(q) => {
+            let q_lower = q.to_ascii_lowercase();
+            let matched: Vec<&Project> = all_projects
+                .iter()
+                .filter(|p| p.name.to_ascii_lowercase().contains(&q_lower))
+                .collect();
+            if matched.is_empty() {
+                bail!("no project matches '{q}'");
+            }
+            matched
+        }
+    };
+
     ui::print_banner();
 
     for project in &projects {
+        let project = *project;
         println!();
         print_project_header(project);
 

@@ -18,6 +18,9 @@ the CLI will actually notice after upgrading. Group entries under **Added**,
   commit message for the latest deployment, pulled from Railway's
   deployment metadata. Per-project tables make service-to-project
   grouping unambiguous, especially across many projects.
+- `rlwy ls` accepts an optional project-name filter
+  (`rlwy ls uft` shows only projects whose name contains "uft",
+  case-insensitive). Errors out if no project matches.
 - `rlwy watch` picker is now a fuzzy search — type any part of a service
   or project name to narrow the list, arrow keys + Enter to pick.
 - `rlwy watch` accepts a query arg: a service id (UUID), a service name

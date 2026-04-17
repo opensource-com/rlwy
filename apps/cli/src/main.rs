@@ -28,7 +28,10 @@ enum Cmd {
     /// Show the account the stored token belongs to
     Whoami,
     /// List projects, services, and the latest deployment of each
-    Ls,
+    Ls {
+        /// Optional project-name filter (case-insensitive substring). `rlwy ls uft` shows only projects whose name contains "uft"
+        query: Option<String>,
+    },
     /// Watch the active deployment of a service
     Watch {
         /// Service id, name, or `project/service`. Omit to use the last choice
@@ -58,7 +61,7 @@ async fn main() -> anyhow::Result<()> {
     match cli.command {
         Cmd::Login { token } => commands::login::run(token).await,
         Cmd::Whoami => commands::login::whoami().await,
-        Cmd::Ls => commands::list::run().await,
+        Cmd::Ls { query } => commands::list::run(query).await,
         Cmd::Watch { query, interval, pick } => commands::watch::run(query, interval, pick).await,
         Cmd::Logs { deployment_id } => commands::watch::logs(deployment_id).await,
         Cmd::Upgrade => commands::upgrade::run().await,
