@@ -23,6 +23,7 @@ directories = "6"
 chrono = { version = "0.4", default-features = false, features = ["clock", "serde"] }
 dialoguer = { version = "0.12", default-features = false, features = ["password"] }
 dotenvy = "0.15"
+tabled = { version = "0.17", features = ["ansi"] }
 
 [profile.release]
 lto = "thin"

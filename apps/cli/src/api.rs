@@ -95,6 +95,7 @@ impl Railway {
                                 status
                                 createdAt
                                 staticUrl
+                                meta
                               }
                             }
                           }
@@ -236,6 +237,18 @@ pub struct Deployment {
     pub created_at: Option<String>,
     #[serde(rename = "staticUrl")]
     pub static_url: Option<String>,
+    #[serde(default)]
+    pub meta: Option<Value>,
+}
+
+impl Deployment {
+    pub fn commit_hash(&self) -> Option<&str> {
+        self.meta.as_ref()?.get("commitHash")?.as_str()
+    }
+
+    pub fn commit_message(&self) -> Option<&str> {
+        self.meta.as_ref()?.get("commitMessage")?.as_str()
+    }
 }
 
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq)]

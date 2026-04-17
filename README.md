@@ -34,7 +34,7 @@ Also available as `rlwycli`, `railwaycli`, and `railwycli` — same binary, pick
 |----------------------------|------------------------------------------------------------|
 | `rlwy login [--token T]`   | Save your Railway API token                                |
 | `rlwy whoami`              | Show the account the current token belongs to              |
-| `rlwy ls`                  | List projects, services, and latest deployment status      |
+| `rlwy ls`                  | Table of projects, services, status, and latest commit     |
 | `rlwy watch [SERVICE_ID]`  | Poll the active deployment and show progress + status      |
 | `rlwy logs DEPLOYMENT_ID`  | Print build + deploy logs for a deployment                 |
 | `rlwy upgrade`             | Fetch the latest GitHub release and replace your binary    |
