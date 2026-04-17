@@ -10,6 +10,8 @@ rlwy ls
 rlwy watch
 ```
 
+The package installs four interchangeable commands: `rlwy`, `rlwycli`, `railwaycli`, and `railwycli`.
+
 On install, this package downloads the Rust binary for your platform from the
 matching GitHub release. Set `RLWY_SKIP_INSTALL=1` to opt out.
 

@@ -1,12 +1,15 @@
 {
   "name": "railwaycli",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Watch Railway deployments from your terminal — Rust core delivered over npm",
   "keywords": ["railway", "deployment", "cli", "monitor"],
   "license": "MIT",
   "type": "module",
   "bin": {
-    "rlwy": "bin/rlwy.js"
+    "rlwy": "bin/rlwy.js",
+    "rlwycli": "bin/rlwy.js",
+    "railwaycli": "bin/rlwy.js",
+    "railwycli": "bin/rlwy.js"
   },
   "files": [
     "bin/",

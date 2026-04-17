@@ -26,6 +26,8 @@ rlwy ls              # list your projects + last deployment status
 rlwy watch           # pick a service and tail the current deployment
 ```
 
+Also available as `rlwycli`, `railwaycli`, and `railwycli` — same binary, pick whichever you remember.
+
 ## Commands
 
 | Command                    | What it does                                               |
