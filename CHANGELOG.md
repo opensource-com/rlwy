@@ -28,7 +28,14 @@ the CLI will actually notice after upgrading. Group entries under **Added**,
   `rlwy watch`, `rlwy logs`, and `rlwy redeploy` output shows which
   environment the active deployment belongs to (e.g.
   `watching service <id> [production]`), so you can tell at a glance
-  whether you're tailing prod or staging. No filter flag yet — upcoming.
+  whether you're tailing prod or staging.
+- `--env <name>` flag on `rlwy watch`, `rlwy logs`, and `rlwy redeploy`
+  targets a specific environment by name (case-insensitive). Under the
+  hood, the `deployments(first: 1)` selection is filtered with
+  `input: { environmentId }`, so the "latest deployment" is guaranteed
+  to be the latest in that env, not the latest across all envs. Errors
+  out with a helpful list of available environment names when the given
+  name doesn't exist in the target project.
 - `rlwy redeploy [QUERY]`: re-triggers a service's latest deployment
   (Railway's `deploymentRedeploy` mutation) and tails the resulting new
   deployment until it reaches a terminal status, just like `rlwy watch`.

@@ -42,6 +42,9 @@ enum Cmd {
         /// Always open the picker, even if a last service is remembered
         #[arg(long)]
         pick: bool,
+        /// Target a specific environment by name (e.g. `production`, `staging`)
+        #[arg(long)]
+        env: Option<String>,
     },
     /// Print build + deploy logs. QUERY is a service name/id/`project/service`,
     /// or a bare deployment id. Omit to use the last-picked service.
@@ -62,6 +65,9 @@ enum Cmd {
         /// Poll interval in seconds when --follow
         #[arg(long, default_value_t = 2)]
         interval: u64,
+        /// Target a specific environment by name
+        #[arg(long)]
+        env: Option<String>,
     },
     /// Trigger a new deployment by redeploying the latest one
     Redeploy {
@@ -73,6 +79,9 @@ enum Cmd {
         /// Don't tail the new deployment after triggering
         #[arg(long)]
         no_watch: bool,
+        /// Target a specific environment by name
+        #[arg(long)]
+        env: Option<String>,
     },
     /// Download and install the latest rlwy release
     Upgrade,
@@ -89,12 +98,14 @@ async fn main() -> anyhow::Result<()> {
         Cmd::Login { token } => commands::login::run(token).await,
         Cmd::Whoami => commands::login::whoami().await,
         Cmd::Ls { query } => commands::list::run(query).await,
-        Cmd::Watch { query, interval, pick } => commands::watch::run(query, interval, pick).await,
-        Cmd::Logs { query, pick, follow, since, grep, interval } => {
-            commands::watch::logs(query, pick, follow, since, grep, interval).await
+        Cmd::Watch { query, interval, pick, env } => {
+            commands::watch::run(query, interval, pick, env).await
         }
-        Cmd::Redeploy { query, pick, no_watch } => {
-            commands::redeploy::run(query, pick, no_watch).await
+        Cmd::Logs { query, pick, follow, since, grep, interval, env } => {
+            commands::watch::logs(query, pick, follow, since, grep, interval, env).await
+        }
+        Cmd::Redeploy { query, pick, no_watch, env } => {
+            commands::redeploy::run(query, pick, no_watch, env).await
         }
         Cmd::Upgrade => commands::upgrade::run().await,
     }

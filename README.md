@@ -35,7 +35,7 @@ Also available as `rlwycli`, `railwaycli`, and `railwycli` — same binary, pick
 | `rlwy login [--token T]`   | Save your Railway API token                                |
 | `rlwy whoami`              | Show the account the current token belongs to              |
 | `rlwy ls [QUERY]`          | Table of projects, services, status, and latest commit. QUERY filters by project-name substring (e.g. `rlwy ls uft`) |
-| `rlwy watch [QUERY]`       | Poll the active deployment. QUERY is a service id, name, or `project/service`. Omit to resume the last choice; add `--pick` to force the picker. |
+| `rlwy watch [QUERY]`       | Poll the active deployment. QUERY is a service id, name, or `project/service`. Omit to resume the last choice; add `--pick` to force the picker. `--env <name>` targets a specific environment. |
 | `rlwy logs [QUERY]`        | Print build + deploy logs. QUERY is a service name/id/`project/service` or a bare deployment id. Flags: `-f/--follow` stream new lines, `--since 30m/2h/7d` time window, `--grep text` filter (case-insensitive), `--interval N` poll seconds. Omit QUERY to use the last-picked service; `--pick` forces the picker. |
 | `rlwy redeploy [QUERY]`    | Re-trigger the latest deployment of a service and tail it. Same resolution as `watch`/`logs`; add `--no-watch` to just trigger. |
 | `rlwy upgrade`             | Fetch the latest GitHub release and replace your binary    |

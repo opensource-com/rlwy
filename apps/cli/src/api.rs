@@ -117,11 +117,22 @@ impl Railway {
 
     /// Scan accessible projects to find a service by id and return its latest
     /// deployment together with the project and env name it belongs to.
+    /// When `env_id` is supplied, the inner `deployments(first:1)` selection is
+    /// filtered to that environment — so the returned deployment is guaranteed
+    /// to be the latest for that env, not the latest across all envs.
+    ///
     /// Team/project tokens typically can't hit top-level
     /// `deployments(input:{serviceId})` or `service(id:)` queries, so we use the
     /// nested connection that we already know works for `ls`.
-    pub async fn latest_deployment(&self, service_id: &str) -> Result<Option<DeploymentCtx>> {
-        let projects = self.projects().await?;
+    pub async fn latest_deployment(
+        &self,
+        service_id: &str,
+        env_id: Option<&str>,
+    ) -> Result<Option<DeploymentCtx>> {
+        let projects = match env_id {
+            Some(eid) => self.projects_with_env(eid).await?,
+            None => self.projects().await?,
+        };
         for p in projects {
             for svc in p.services() {
                 if svc.id == service_id {
@@ -143,6 +154,48 @@ impl Railway {
             }
         }
         Ok(None)
+    }
+
+    async fn projects_with_env(&self, env_id: &str) -> Result<Vec<Project>> {
+        #[derive(Deserialize)]
+        struct Data { projects: Connection<Project> }
+        let q = r#"
+            query($input: DeploymentListInput) {
+              projects {
+                edges {
+                  node {
+                    id
+                    name
+                    environments { edges { node { id name } } }
+                    services {
+                      edges {
+                        node {
+                          id
+                          name
+                          deployments(first: 1, input: $input) {
+                            edges {
+                              node {
+                                id
+                                status
+                                createdAt
+                                staticUrl
+                                meta
+                                environmentId
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+        "#;
+        let data: Data = self
+            .graphql(q, json!({ "input": { "environmentId": env_id } }))
+            .await?;
+        Ok(data.projects.into_vec())
     }
 
     pub async fn redeploy_deployment(&self, deployment_id: &str) -> Result<Deployment> {

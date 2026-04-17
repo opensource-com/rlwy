@@ -7,14 +7,20 @@ use dialoguer::FuzzySelect;
 use std::collections::VecDeque;
 use std::time::Duration;
 
-pub async fn run(query: Option<String>, interval_secs: u64, pick: bool) -> Result<()> {
+pub async fn run(
+    query: Option<String>,
+    interval_secs: u64,
+    pick: bool,
+    env: Option<String>,
+) -> Result<()> {
     let token = config::require_token()?;
     let api = Railway::new(token)?;
 
     let service_id = resolve_service(&api, query.as_deref(), pick).await?;
     let _ = config::remember_service(&service_id);
+    let env_id = resolve_env_id(&api, &service_id, env.as_deref()).await?;
 
-    let Some(ctx) = api.latest_deployment(&service_id).await? else {
+    let Some(ctx) = api.latest_deployment(&service_id, env_id.as_deref()).await? else {
         println!(
             "{} no deployments found for service {}",
             "!".yellow().bold(),
@@ -105,12 +111,13 @@ pub async fn logs(
     since: Option<String>,
     grep: Option<String>,
     interval_secs: u64,
+    env: Option<String>,
 ) -> Result<()> {
     let token = config::require_token()?;
     let api = Railway::new(token)?;
 
     let (deployment_id, env_name) =
-        resolve_deployment_for_logs(&api, query.as_deref(), pick).await?;
+        resolve_deployment_for_logs(&api, query.as_deref(), pick, env.as_deref()).await?;
     let start_date = since.as_deref().map(parse_since).transpose()?;
     let start_iso = start_date.map(|dt| dt.to_rfc3339());
     let grep_lower = grep.as_deref().map(|s| s.to_ascii_lowercase());
@@ -381,6 +388,7 @@ async fn resolve_deployment_for_logs(
     api: &Railway,
     query: Option<&str>,
     force_pick: bool,
+    env_name: Option<&str>,
 ) -> Result<(String, Option<String>)> {
     if !force_pick {
         if let Some(q) = query.map(str::trim).filter(|s| !s.is_empty()) {
@@ -392,15 +400,20 @@ async fn resolve_deployment_for_logs(
                     for s in p.services() {
                         if s.id == q {
                             let _ = config::remember_service(q);
-                            return latest_deployment_with_env(api, q).await;
+                            return latest_deployment_with_env(api, q, env_name).await;
                         }
                     }
+                }
+                if env_name.is_some() {
+                    bail!(
+                        "{q} doesn't match any service — --env is incompatible with a raw deployment id"
+                    );
                 }
                 return Ok((q.to_string(), None));
             }
             let service_id = resolve_by_name(api, q).await?;
             let _ = config::remember_service(&service_id);
-            return latest_deployment_with_env(api, &service_id).await;
+            return latest_deployment_with_env(api, &service_id, env_name).await;
         }
         if let Some(id) = config::load().ok().and_then(|c| c.last_service_id) {
             println!(
@@ -409,21 +422,60 @@ async fn resolve_deployment_for_logs(
                 id.cyan(),
                 "--pick".bold()
             );
-            return latest_deployment_with_env(api, &id).await;
+            return latest_deployment_with_env(api, &id, env_name).await;
         }
     }
     let service_id = pick_service_interactively(api).await?;
     let _ = config::remember_service(&service_id);
-    latest_deployment_with_env(api, &service_id).await
+    latest_deployment_with_env(api, &service_id, env_name).await
 }
 
 async fn latest_deployment_with_env(
     api: &Railway,
     service_id: &str,
+    env_name: Option<&str>,
 ) -> Result<(String, Option<String>)> {
+    let env_id = resolve_env_id(api, service_id, env_name).await?;
     let ctx = api
-        .latest_deployment(service_id)
+        .latest_deployment(service_id, env_id.as_deref())
         .await?
-        .ok_or_else(|| anyhow!("no deployments found for service {service_id}"))?;
+        .ok_or_else(|| match env_name {
+            Some(e) => anyhow!("no deployments found for service {service_id} in env '{e}'"),
+            None => anyhow!("no deployments found for service {service_id}"),
+        })?;
     Ok((ctx.deployment.id, ctx.env_name))
+}
+
+pub(crate) async fn resolve_env_id(
+    api: &Railway,
+    service_id: &str,
+    env_name: Option<&str>,
+) -> Result<Option<String>> {
+    let Some(env_name) = env_name else {
+        return Ok(None);
+    };
+    let projects = api.projects().await?;
+    for p in &projects {
+        for s in p.services() {
+            if s.id == service_id {
+                for e in p.environments() {
+                    if e.name.eq_ignore_ascii_case(env_name) {
+                        return Ok(Some(e.id.clone()));
+                    }
+                }
+                let available: Vec<_> = p.environments().iter().map(|e| e.name.clone()).collect();
+                bail!(
+                    "project '{}' has no environment named '{}' (available: {})",
+                    p.name,
+                    env_name,
+                    if available.is_empty() {
+                        "(none)".to_string()
+                    } else {
+                        available.join(", ")
+                    }
+                );
+            }
+        }
+    }
+    bail!("service {service_id} not found in accessible projects")
 }

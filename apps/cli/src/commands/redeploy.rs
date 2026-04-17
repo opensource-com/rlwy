@@ -6,18 +6,27 @@ use anyhow::{Result, anyhow};
 use colored::Colorize;
 use std::time::Duration;
 
-pub async fn run(query: Option<String>, pick: bool, no_watch: bool) -> Result<()> {
+pub async fn run(
+    query: Option<String>,
+    pick: bool,
+    no_watch: bool,
+    env: Option<String>,
+) -> Result<()> {
     let token = config::require_token()?;
     let api = Railway::new(token)?;
 
     let service_id = watch::resolve_service(&api, query.as_deref(), pick).await?;
     let _ = config::remember_service(&service_id);
+    let env_id = watch::resolve_env_id(&api, &service_id, env.as_deref()).await?;
 
     let ctx = api
-        .latest_deployment(&service_id)
+        .latest_deployment(&service_id, env_id.as_deref())
         .await?
-        .ok_or_else(|| {
-            anyhow!("service {service_id} has no existing deployment to redeploy")
+        .ok_or_else(|| match env.as_deref() {
+            Some(e) => anyhow!(
+                "service {service_id} has no deployment in env '{e}' to redeploy"
+            ),
+            None => anyhow!("service {service_id} has no existing deployment to redeploy"),
         })?;
 
     println!(
