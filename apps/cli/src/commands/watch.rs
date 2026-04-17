@@ -14,7 +14,7 @@ pub async fn run(query: Option<String>, interval_secs: u64, pick: bool) -> Resul
     let service_id = resolve_service(&api, query.as_deref(), pick).await?;
     let _ = config::remember_service(&service_id);
 
-    let Some(mut current) = api.latest_deployment(&service_id).await? else {
+    let Some(ctx) = api.latest_deployment(&service_id).await? else {
         println!(
             "{} no deployments found for service {}",
             "!".yellow().bold(),
@@ -23,10 +23,14 @@ pub async fn run(query: Option<String>, interval_secs: u64, pick: bool) -> Resul
         return Ok(());
     };
 
+    let env_label = env_label(&ctx.env_name);
+    let mut current = ctx.deployment;
+
     ui::print_banner();
     println!(
-        "watching service {}   deployment {}",
+        "watching service {} {}  deployment {}",
         service_id.cyan(),
+        env_label,
         current.id.dimmed()
     );
     if let Some(url) = &current.static_url {
@@ -87,6 +91,13 @@ pub async fn run(query: Option<String>, interval_secs: u64, pick: bool) -> Resul
     Ok(())
 }
 
+pub(crate) fn env_label(name: &Option<String>) -> colored::ColoredString {
+    match name {
+        Some(n) => format!("[{n}]").dimmed(),
+        None => "".normal(),
+    }
+}
+
 pub async fn logs(
     query: Option<String>,
     pick: bool,
@@ -98,12 +109,18 @@ pub async fn logs(
     let token = config::require_token()?;
     let api = Railway::new(token)?;
 
-    let deployment_id = resolve_deployment_for_logs(&api, query.as_deref(), pick).await?;
+    let (deployment_id, env_name) =
+        resolve_deployment_for_logs(&api, query.as_deref(), pick).await?;
     let start_date = since.as_deref().map(parse_since).transpose()?;
     let start_iso = start_date.map(|dt| dt.to_rfc3339());
     let grep_lower = grep.as_deref().map(|s| s.to_ascii_lowercase());
 
-    println!("{} deployment {}", "══".bright_magenta(), deployment_id.dimmed());
+    println!(
+        "{} deployment {} {}",
+        "══".bright_magenta(),
+        deployment_id.dimmed(),
+        env_label(&env_name)
+    );
     if let Some(iso) = &start_iso {
         println!("   since: {}", iso.dimmed());
     }
@@ -364,7 +381,7 @@ async fn resolve_deployment_for_logs(
     api: &Railway,
     query: Option<&str>,
     force_pick: bool,
-) -> Result<String> {
+) -> Result<(String, Option<String>)> {
     if !force_pick {
         if let Some(q) = query.map(str::trim).filter(|s| !s.is_empty()) {
             if looks_like_uuid(q) {
@@ -375,15 +392,15 @@ async fn resolve_deployment_for_logs(
                     for s in p.services() {
                         if s.id == q {
                             let _ = config::remember_service(q);
-                            return latest_deployment_id(api, q).await;
+                            return latest_deployment_with_env(api, q).await;
                         }
                     }
                 }
-                return Ok(q.to_string());
+                return Ok((q.to_string(), None));
             }
             let service_id = resolve_by_name(api, q).await?;
             let _ = config::remember_service(&service_id);
-            return latest_deployment_id(api, &service_id).await;
+            return latest_deployment_with_env(api, &service_id).await;
         }
         if let Some(id) = config::load().ok().and_then(|c| c.last_service_id) {
             println!(
@@ -392,18 +409,21 @@ async fn resolve_deployment_for_logs(
                 id.cyan(),
                 "--pick".bold()
             );
-            return latest_deployment_id(api, &id).await;
+            return latest_deployment_with_env(api, &id).await;
         }
     }
     let service_id = pick_service_interactively(api).await?;
     let _ = config::remember_service(&service_id);
-    latest_deployment_id(api, &service_id).await
+    latest_deployment_with_env(api, &service_id).await
 }
 
-async fn latest_deployment_id(api: &Railway, service_id: &str) -> Result<String> {
-    let dep = api
+async fn latest_deployment_with_env(
+    api: &Railway,
+    service_id: &str,
+) -> Result<(String, Option<String>)> {
+    let ctx = api
         .latest_deployment(service_id)
         .await?
         .ok_or_else(|| anyhow!("no deployments found for service {service_id}"))?;
-    Ok(dep.id)
+    Ok((ctx.deployment.id, ctx.env_name))
 }

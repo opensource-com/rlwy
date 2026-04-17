@@ -83,6 +83,9 @@ impl Railway {
                   node {
                     id
                     name
+                    environments {
+                      edges { node { id name } }
+                    }
                     services {
                       edges {
                         node {
@@ -96,6 +99,7 @@ impl Railway {
                                 createdAt
                                 staticUrl
                                 meta
+                                environmentId
                               }
                             }
                           }
@@ -112,15 +116,29 @@ impl Railway {
     }
 
     /// Scan accessible projects to find a service by id and return its latest
-    /// deployment. Team/project tokens typically can't hit top-level
+    /// deployment together with the project and env name it belongs to.
+    /// Team/project tokens typically can't hit top-level
     /// `deployments(input:{serviceId})` or `service(id:)` queries, so we use the
     /// nested connection that we already know works for `ls`.
-    pub async fn latest_deployment(&self, service_id: &str) -> Result<Option<Deployment>> {
+    pub async fn latest_deployment(&self, service_id: &str) -> Result<Option<DeploymentCtx>> {
         let projects = self.projects().await?;
         for p in projects {
             for svc in p.services() {
                 if svc.id == service_id {
-                    return Ok(svc.latest_deployment().cloned());
+                    let Some(dep) = svc.latest_deployment().cloned() else {
+                        return Ok(None);
+                    };
+                    let env_name = dep
+                        .environment_id
+                        .as_deref()
+                        .and_then(|eid| p.env_name(eid))
+                        .map(str::to_string);
+                    return Ok(Some(DeploymentCtx {
+                        deployment: dep,
+                        env_name,
+                        project_name: p.name.clone(),
+                        service_name: svc.name.clone(),
+                    }));
                 }
             }
         }
@@ -146,7 +164,7 @@ impl Railway {
         struct Data { deployment: Deployment }
         let q = r#"
             query($id: String!) {
-              deployment(id: $id) { id status createdAt staticUrl }
+              deployment(id: $id) { id status createdAt staticUrl environmentId }
             }
         "#;
         let data: Data = self.graphql(q, json!({ "id": id })).await?;
@@ -231,6 +249,8 @@ pub struct Project {
     pub name: String,
     #[serde(default)]
     pub services: Option<Connection<Service>>,
+    #[serde(default)]
+    pub environments: Option<Connection<Environment>>,
 }
 
 impl Project {
@@ -240,6 +260,35 @@ impl Project {
             .map(|c| c.edges.iter().map(|e| &e.node).collect())
             .unwrap_or_default()
     }
+
+    pub fn environments(&self) -> Vec<&Environment> {
+        self.environments
+            .as_ref()
+            .map(|c| c.edges.iter().map(|e| &e.node).collect())
+            .unwrap_or_default()
+    }
+
+    pub fn env_name(&self, id: &str) -> Option<&str> {
+        self.environments()
+            .into_iter()
+            .find(|e| e.id == id)
+            .map(|e| e.name.as_str())
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Environment {
+    pub id: String,
+    pub name: String,
+}
+
+pub struct DeploymentCtx {
+    pub deployment: Deployment,
+    pub env_name: Option<String>,
+    #[allow(dead_code)]
+    pub project_name: String,
+    #[allow(dead_code)]
+    pub service_name: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -269,6 +318,8 @@ pub struct Deployment {
     pub static_url: Option<String>,
     #[serde(default)]
     pub meta: Option<Value>,
+    #[serde(rename = "environmentId", default)]
+    pub environment_id: Option<String>,
 }
 
 impl Deployment {

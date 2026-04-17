@@ -132,11 +132,19 @@ pub async fn run(query: Option<String>) -> Result<()> {
 }
 
 fn print_project_header(project: &Project) {
+    let envs = project.environments();
+    let env_suffix = if envs.is_empty() {
+        String::new()
+    } else {
+        let names: Vec<String> = envs.iter().map(|e| e.name.clone()).collect();
+        format!("   envs: {}", names.join(", ").dimmed())
+    };
     println!(
-        "{} {}   {}",
+        "{} {}   {}{}",
         "■".bright_magenta(),
         project.name.bold(),
-        project.id.dimmed()
+        project.id.dimmed(),
+        env_suffix
     );
 }
 

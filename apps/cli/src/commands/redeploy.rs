@@ -13,7 +13,7 @@ pub async fn run(query: Option<String>, pick: bool, no_watch: bool) -> Result<()
     let service_id = watch::resolve_service(&api, query.as_deref(), pick).await?;
     let _ = config::remember_service(&service_id);
 
-    let latest = api
+    let ctx = api
         .latest_deployment(&service_id)
         .await?
         .ok_or_else(|| {
@@ -21,15 +21,14 @@ pub async fn run(query: Option<String>, pick: bool, no_watch: bool) -> Result<()
         })?;
 
     println!(
-        "{} redeploying service {}",
+        "{} redeploying service {} {}",
         "↻".cyan().bold(),
-        service_id.cyan()
+        service_id.cyan(),
+        watch::env_label(&ctx.env_name)
     );
-    println!("   from deployment {}", latest.id.dimmed());
+    println!("   from deployment {}", ctx.deployment.id.dimmed());
 
-    let fresh = api
-        .redeploy_deployment(&latest.id)
-        .await?;
+    let fresh = api.redeploy_deployment(&ctx.deployment.id).await?;
 
     println!(
         "{} triggered new deployment {}",

@@ -22,6 +22,13 @@ the CLI will actually notice after upgrading. Group entries under **Added**,
   the argument was taken literally as a deployment id.
 
 ### Added
+- Environment awareness: each project's environments (production,
+  staging, …) are now fetched alongside its services. `rlwy ls` shows
+  them in the project header (e.g. `envs: production, staging`). The
+  `rlwy watch`, `rlwy logs`, and `rlwy redeploy` output shows which
+  environment the active deployment belongs to (e.g.
+  `watching service <id> [production]`), so you can tell at a glance
+  whether you're tailing prod or staging. No filter flag yet — upcoming.
 - `rlwy redeploy [QUERY]`: re-triggers a service's latest deployment
   (Railway's `deploymentRedeploy` mutation) and tails the resulting new
   deployment until it reaches a terminal status, just like `rlwy watch`.
