@@ -37,6 +37,7 @@ Also available as `rlwycli`, `railwaycli`, and `railwycli` — same binary, pick
 | `rlwy ls`                  | List projects, services, and latest deployment status      |
 | `rlwy watch [SERVICE_ID]`  | Poll the active deployment and show progress + status      |
 | `rlwy logs DEPLOYMENT_ID`  | Print build + deploy logs for a deployment                 |
+| `rlwy upgrade`             | Fetch the latest GitHub release and replace your binary    |
 
 ## Dev
 

@@ -41,6 +41,8 @@ enum Cmd {
     Logs {
         deployment_id: String,
     },
+    /// Download and install the latest rlwy release
+    Upgrade,
 }
 
 #[tokio::main]
@@ -56,5 +58,6 @@ async fn main() -> anyhow::Result<()> {
         Cmd::Ls => commands::list::run().await,
         Cmd::Watch { service_id, interval } => commands::watch::run(service_id, interval).await,
         Cmd::Logs { deployment_id } => commands::watch::logs(deployment_id).await,
+        Cmd::Upgrade => commands::upgrade::run().await,
     }
 }

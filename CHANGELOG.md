@@ -12,6 +12,11 @@ the CLI will actually notice after upgrading. Group entries under **Added**,
 ## [Unreleased]
 
 ### Added
+- `rlwy upgrade` command: checks the latest GitHub release, downloads the
+  binary for your platform, and atomically replaces the running one. Prints
+  the release notes of the new version on success. Refuses to run against a
+  local cargo build (detects the `target/release` path and suggests
+  `npm run dev:refresh` instead).
 - `npm run dev:link` workflow: builds the Rust binary, symlinks it into the
   npm wrapper, and runs `npm link` so the globally installed `rlwy`,
   `rlwycli`, `railwaycli`, and `railwycli` commands always reflect your
