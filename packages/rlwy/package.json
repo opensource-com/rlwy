@@ -26,7 +26,6 @@
     "@types/node": "latest"
   },
   "rlwy": {
-    "binaryVersion": "0.1.1",
     "releaseBaseUrl": "https://github.com/opensource-com/rlwy/releases/download"
   }
 }

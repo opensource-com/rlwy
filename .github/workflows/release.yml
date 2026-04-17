@@ -46,6 +46,15 @@ jobs:
         with:
           workspaces: apps/cli -> target
 
+      - name: Set version from tag
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "Injecting version ${VERSION} into Cargo.toml"
+          sed -i.bak -E "s/^version = \".*\"/version = \"${VERSION}\"/" apps/cli/Cargo.toml
+          rm apps/cli/Cargo.toml.bak
+          head -5 apps/cli/Cargo.toml
+
       - name: Build
         run: cargo build --release --target ${{ matrix.target }}
         working-directory: apps/cli
@@ -94,6 +103,14 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       - run: npm install
+
+      - name: Set version from tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "Injecting version ${VERSION} into packages/rlwy/package.json"
+          npm pkg set version="${VERSION}" --workspace=packages/rlwy
+          cat packages/rlwy/package.json
+
       - run: npx nx build rlwy
 
       - name: Publish to npm
