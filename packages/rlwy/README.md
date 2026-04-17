@@ -3,7 +3,7 @@
 Tiny terminal-first watcher for Railway deployments. Rust under the hood, delivered over npm.
 
 ```bash
-npm install -g rlwy
+npm install -g railwaycli
 
 rlwy login
 rlwy ls
@@ -23,4 +23,4 @@ Supported platforms:
 | macOS   | arm64   |
 | Windows | x64     |
 
-Source, issues, and release binaries: https://github.com/rlwy-dev/rlwy
+Source, issues, and release binaries: https://github.com/opensource-com/rlwy

@@ -7,16 +7,16 @@ Rust core. Distributed via npm + direct installers.
 
 ```bash
 # npm (Linux, macOS, Windows — needs Node/npm)
-npm install -g rlwy
+npm install -g railwaycli
 
 # Linux / macOS (no npm needed)
-curl -fsSL https://raw.githubusercontent.com/rlwy-dev/rlwy/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/opensource-com/rlwy/main/install.sh | bash
 
 # Windows PowerShell (no npm needed)
-irm https://raw.githubusercontent.com/rlwy-dev/rlwy/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/opensource-com/rlwy/main/install.ps1 | iex
 ```
 
-Pin a version with `RLWY_VERSION=v0.1.0` (bash) or `$env:RLWY_VERSION='v0.1.0'` (PowerShell).
+Pin a version with `RLWY_VERSION=v0.1.1` (bash) or `$env:RLWY_VERSION='v0.1.1'` (PowerShell).
 
 ## Usage
 
@@ -52,7 +52,7 @@ npx nx build rlwy           # compiles the npm wrapper
 ## Release
 
 ```bash
-git tag v0.1.0
+git tag v0.1.1
 git push --tags
 ```
 

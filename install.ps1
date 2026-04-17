@@ -1,17 +1,17 @@
 # rlwy installer for Windows (PowerShell).
 #
 # Usage:
-#   irm https://raw.githubusercontent.com/rlwy-dev/rlwy/main/install.ps1 | iex
-#   $env:RLWY_VERSION = 'v0.1.0'; irm https://raw.githubusercontent.com/rlwy-dev/rlwy/main/install.ps1 | iex
+#   irm https://raw.githubusercontent.com/opensource-com/rlwy/main/install.ps1 | iex
+#   $env:RLWY_VERSION = 'v0.1.0'; irm https://raw.githubusercontent.com/opensource-com/rlwy/main/install.ps1 | iex
 #
 # Env:
 #   RLWY_VERSION      tag to install (default: latest)
 #   RLWY_INSTALL_DIR  install directory (default: $env:LOCALAPPDATA\Programs\rlwy)
-#   RLWY_REPO         override repo (default: rlwy-dev/rlwy)
+#   RLWY_REPO         override repo (default: opensource-com/rlwy)
 
 $ErrorActionPreference = 'Stop'
 
-$Repo       = if ($env:RLWY_REPO)        { $env:RLWY_REPO }        else { 'rlwy-dev/rlwy' }
+$Repo       = if ($env:RLWY_REPO)        { $env:RLWY_REPO }        else { 'opensource-com/rlwy' }
 $Version    = if ($env:RLWY_VERSION)     { $env:RLWY_VERSION }     else { 'latest' }
 $InstallDir = if ($env:RLWY_INSTALL_DIR) { $env:RLWY_INSTALL_DIR } else { Join-Path $env:LOCALAPPDATA 'Programs\rlwy' }
 

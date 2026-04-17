@@ -1,6 +1,6 @@
 {
-  "name": "rlwy",
-  "version": "0.1.0",
+  "name": "railwaycli",
+  "version": "0.1.1",
   "description": "Watch Railway deployments from your terminal — Rust core delivered over npm",
   "keywords": ["railway", "deployment", "cli", "monitor"],
   "license": "MIT",
@@ -26,7 +26,7 @@
     "@types/node": "latest"
   },
   "rlwy": {
-    "binaryVersion": "0.1.0",
+    "binaryVersion": "0.1.1",
     "releaseBaseUrl": "https://github.com/opensource-com/rlwy/releases/download"
   }
 }

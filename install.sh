@@ -2,16 +2,16 @@
 # rlwy installer for Linux and macOS.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/rlwy-dev/rlwy/main/install.sh | bash
-#   curl -fsSL https://raw.githubusercontent.com/rlwy-dev/rlwy/main/install.sh | RLWY_VERSION=v0.1.0 bash
+#   curl -fsSL https://raw.githubusercontent.com/opensource-com/rlwy/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/opensource-com/rlwy/main/install.sh | RLWY_VERSION=v0.1.0 bash
 #
 # Env:
 #   RLWY_VERSION      tag to install (default: latest)
 #   RLWY_INSTALL_DIR  install directory (default: $HOME/.local/bin)
-#   RLWY_REPO         override repo (default: rlwy-dev/rlwy)
+#   RLWY_REPO         override repo (default: opensource-com/rlwy)
 set -euo pipefail
 
-REPO="${RLWY_REPO:-rlwy-dev/rlwy}"
+REPO="${RLWY_REPO:-opensource-com/rlwy}"
 VERSION="${RLWY_VERSION:-latest}"
 INSTALL_DIR="${RLWY_INSTALL_DIR:-$HOME/.local/bin}"
 

@@ -1,7 +1,9 @@
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
   "namedInputs": {
-    "default": ["{projectRoot}/**/*"],
+    "default": [
+      "{projectRoot}/**/*"
+    ],
     "production": [
       "default",
       "!{projectRoot}/**/*.spec.ts",
@@ -12,12 +14,16 @@
   "targetDefaults": {
     "build": {
       "cache": true,
-      "inputs": ["production", "^production"],
+      "inputs": [
+        "production",
+        "^production"
+      ],
       "outputs": [
         "{projectRoot}/dist",
         "{projectRoot}/target/release"
       ]
     }
   },
-  "defaultBase": "main"
+  "defaultBase": "main",
+  "analytics": true
 }

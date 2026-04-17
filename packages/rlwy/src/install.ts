@@ -29,7 +29,7 @@ async function main(): Promise<void> {
   const version = manifest.rlwy?.binaryVersion ?? manifest.version;
   const releaseBaseUrl =
     manifest.rlwy?.releaseBaseUrl ??
-    'https://github.com/rlwy-dev/rlwy/releases/download';
+    'https://github.com/opensource-com/rlwy/releases/download';
 
   let target;
   try {
