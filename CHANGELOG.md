@@ -12,10 +12,12 @@ the CLI will actually notice after upgrading. Group entries under **Added**,
 ## [Unreleased]
 
 ### Changed
-- `rlwy ls` now renders projects and services as a single rounded table
-  with PROJECT / SERVICE / STATUS / COMMIT / MESSAGE columns. Each row
-  shows the short commit hash and first line of the commit message for the
-  latest deployment, pulled from Railway's deployment metadata.
+- `rlwy ls` now renders each project as its own rounded table under a
+  project header (name + id), with SERVICE / STATUS / COMMIT / MESSAGE
+  columns. Each row shows the short commit hash and first line of the
+  commit message for the latest deployment, pulled from Railway's
+  deployment metadata. Per-project tables make service-to-project
+  grouping unambiguous, especially across many projects.
 
 ### Added
 - `rlwy upgrade` command: checks the latest GitHub release, downloads the
