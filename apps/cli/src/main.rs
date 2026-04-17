@@ -50,6 +50,18 @@ enum Cmd {
         /// Always open the picker
         #[arg(long)]
         pick: bool,
+        /// Stream new log lines as they arrive (ctrl-c to exit)
+        #[arg(short, long)]
+        follow: bool,
+        /// Only show logs from the last N time (e.g. `30m`, `2h`, `24h`, `7d`)
+        #[arg(long)]
+        since: Option<String>,
+        /// Only print lines whose message contains this substring (case-insensitive)
+        #[arg(long)]
+        grep: Option<String>,
+        /// Poll interval in seconds when --follow
+        #[arg(long, default_value_t = 2)]
+        interval: u64,
     },
     /// Download and install the latest rlwy release
     Upgrade,
@@ -67,7 +79,9 @@ async fn main() -> anyhow::Result<()> {
         Cmd::Whoami => commands::login::whoami().await,
         Cmd::Ls { query } => commands::list::run(query).await,
         Cmd::Watch { query, interval, pick } => commands::watch::run(query, interval, pick).await,
-        Cmd::Logs { query, pick } => commands::watch::logs(query, pick).await,
+        Cmd::Logs { query, pick, follow, since, grep, interval } => {
+            commands::watch::logs(query, pick, follow, since, grep, interval).await
+        }
         Cmd::Upgrade => commands::upgrade::run().await,
     }
 }

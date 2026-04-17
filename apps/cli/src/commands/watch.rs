@@ -4,6 +4,7 @@ use crate::ui;
 use anyhow::{Context, Result, anyhow, bail};
 use colored::Colorize;
 use dialoguer::FuzzySelect;
+use std::collections::VecDeque;
 use std::time::Duration;
 
 pub async fn run(query: Option<String>, interval_secs: u64, pick: bool) -> Result<()> {
@@ -86,41 +87,155 @@ pub async fn run(query: Option<String>, interval_secs: u64, pick: bool) -> Resul
     Ok(())
 }
 
-pub async fn logs(query: Option<String>, pick: bool) -> Result<()> {
+pub async fn logs(
+    query: Option<String>,
+    pick: bool,
+    follow: bool,
+    since: Option<String>,
+    grep: Option<String>,
+    interval_secs: u64,
+) -> Result<()> {
     let token = config::require_token()?;
     let api = Railway::new(token)?;
 
     let deployment_id = resolve_deployment_for_logs(&api, query.as_deref(), pick).await?;
+    let start_date = since.as_deref().map(parse_since).transpose()?;
+    let start_iso = start_date.map(|dt| dt.to_rfc3339());
+    let grep_lower = grep.as_deref().map(|s| s.to_ascii_lowercase());
+
     println!("{} deployment {}", "══".bright_magenta(), deployment_id.dimmed());
+    if let Some(iso) = &start_iso {
+        println!("   since: {}", iso.dimmed());
+    }
+    if let Some(g) = &grep_lower {
+        println!("   grep:  {}", g.dimmed());
+    }
     println!();
 
     println!("{} build logs", "══".bright_magenta());
     let build = api
-        .build_logs(&deployment_id, 500)
+        .build_logs(&deployment_id, 500, start_iso.as_deref())
         .await
         .context("fetching build logs")?;
-    if build.is_empty() {
-        println!("  {}", "(no build logs yet)".dimmed());
-    } else {
-        for line in &build {
-            ui::print_log_line(line);
-        }
+    let build_shown = print_lines(&build, grep_lower.as_deref());
+    if build_shown == 0 {
+        println!("  {}", "(no build logs in this window)".dimmed());
     }
 
     println!();
     println!("{} deploy logs", "══".bright_magenta());
     let deploy = api
-        .deployment_logs(&deployment_id, 500)
+        .deployment_logs(&deployment_id, 500, start_iso.as_deref())
         .await
         .context("fetching deploy logs")?;
-    if deploy.is_empty() {
-        println!("  {}", "(no deploy logs yet)".dimmed());
-    } else {
-        for line in &deploy {
+    let deploy_shown = print_lines(&deploy, grep_lower.as_deref());
+    if deploy_shown == 0 && !follow {
+        println!("  {}", "(no deploy logs in this window)".dimmed());
+    }
+
+    if !follow {
+        return Ok(());
+    }
+
+    let mut last_ts = deploy
+        .iter()
+        .filter_map(|l| l.timestamp.clone())
+        .max();
+    let mut seen_recent: VecDeque<(Option<String>, String)> = deploy
+        .iter()
+        .rev()
+        .take(64)
+        .map(|l| (l.timestamp.clone(), l.message.clone()))
+        .collect();
+
+    println!();
+    println!(
+        "{} following (ctrl-c to exit)",
+        "↻".cyan().bold()
+    );
+
+    let sleep = Duration::from_secs(interval_secs.max(1));
+    loop {
+        tokio::select! {
+            _ = tokio::time::sleep(sleep) => {}
+            _ = tokio::signal::ctrl_c() => {
+                println!();
+                return Ok(());
+            }
+        }
+
+        let next = match api
+            .deployment_logs(&deployment_id, 500, last_ts.as_deref())
+            .await
+        {
+            Ok(v) => v,
+            Err(err) => {
+                eprintln!("{} {err}", "warn:".yellow());
+                continue;
+            }
+        };
+
+        for line in &next {
+            let key = (line.timestamp.clone(), line.message.clone());
+            if seen_recent.contains(&key) {
+                continue;
+            }
+            if !passes_grep(&line.message, grep_lower.as_deref()) {
+                continue;
+            }
             ui::print_log_line(line);
+
+            if let Some(ts) = &line.timestamp
+                && last_ts.as_deref().map_or(true, |prev| ts.as_str() > prev)
+            {
+                last_ts = Some(ts.clone());
+            }
+            seen_recent.push_back(key);
+            if seen_recent.len() > 128 {
+                seen_recent.pop_front();
+            }
         }
     }
-    Ok(())
+}
+
+fn print_lines(lines: &[crate::api::LogLine], grep_lower: Option<&str>) -> usize {
+    let mut shown = 0;
+    for line in lines {
+        if !passes_grep(&line.message, grep_lower) {
+            continue;
+        }
+        ui::print_log_line(line);
+        shown += 1;
+    }
+    shown
+}
+
+fn passes_grep(msg: &str, grep_lower: Option<&str>) -> bool {
+    match grep_lower {
+        Some(g) => msg.to_ascii_lowercase().contains(g),
+        None => true,
+    }
+}
+
+fn parse_since(raw: &str) -> Result<chrono::DateTime<chrono::Utc>> {
+    let s = raw.trim();
+    if s.is_empty() {
+        bail!("--since is empty");
+    }
+    let split_at = s.find(|c: char| c.is_alphabetic()).unwrap_or(s.len());
+    let (num_str, unit) = s.split_at(split_at);
+    let num: i64 = num_str
+        .trim()
+        .parse()
+        .with_context(|| format!("--since needs a number before the unit, got '{raw}'"))?;
+    let dur = match unit.trim() {
+        "s" | "sec" | "secs" | "second" | "seconds" => chrono::Duration::seconds(num),
+        "" | "m" | "min" | "mins" | "minute" | "minutes" => chrono::Duration::minutes(num),
+        "h" | "hr" | "hrs" | "hour" | "hours" => chrono::Duration::hours(num),
+        "d" | "day" | "days" => chrono::Duration::days(num),
+        other => bail!("unknown --since unit '{other}' (use s/m/h/d)"),
+    };
+    Ok(chrono::Utc::now() - dur)
 }
 
 async fn resolve_service(

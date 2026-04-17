@@ -21,6 +21,19 @@ the CLI will actually notice after upgrading. Group entries under **Added**,
   `rlwy logs <service-uuid>` failed with "Deployment not found" because
   the argument was taken literally as a deployment id.
 
+### Added
+- `rlwy logs -f` / `--follow`: after printing the initial batch, polls
+  Railway's `deploymentLogs` every `--interval` seconds (default 2) and
+  streams new lines until ctrl-c. Deduplicates against the last ~128
+  lines to avoid repeat prints at timestamp boundaries.
+- `rlwy logs --since <duration>`: filters both build + deploy logs to
+  entries after `now - duration`. Accepts `30s`, `15m`, `2h`, `7d`, etc.
+  Passes `startDate` through to Railway's GraphQL query so the server
+  paginates for us. Railway's log retention (typically ~3 days on Free
+  and ~7 days on Pro plans) limits how far back you can go.
+- `rlwy logs --grep <text>`: case-insensitive substring filter applied
+  to each log message both for the initial batch and during follow.
+
 ## [0.2.0] - 2026-04-18
 
 ### Changed

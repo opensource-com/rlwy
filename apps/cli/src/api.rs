@@ -139,34 +139,50 @@ impl Railway {
         Ok(data.deployment)
     }
 
-    pub async fn build_logs(&self, deployment_id: &str, limit: i32) -> Result<Vec<LogLine>> {
+    pub async fn build_logs(
+        &self,
+        deployment_id: &str,
+        limit: i32,
+        start_date: Option<&str>,
+    ) -> Result<Vec<LogLine>> {
         #[derive(Deserialize)]
         struct Data { #[serde(rename = "buildLogs")] logs: Vec<LogLine> }
         let q = r#"
-            query($id: String!, $limit: Int) {
-              buildLogs(deploymentId: $id, limit: $limit) {
+            query($id: String!, $limit: Int, $start: DateTime) {
+              buildLogs(deploymentId: $id, limit: $limit, startDate: $start) {
                 message timestamp severity
               }
             }
         "#;
         let data: Data = self
-            .graphql(q, json!({ "id": deployment_id, "limit": limit }))
+            .graphql(
+                q,
+                json!({ "id": deployment_id, "limit": limit, "start": start_date }),
+            )
             .await?;
         Ok(data.logs)
     }
 
-    pub async fn deployment_logs(&self, deployment_id: &str, limit: i32) -> Result<Vec<LogLine>> {
+    pub async fn deployment_logs(
+        &self,
+        deployment_id: &str,
+        limit: i32,
+        start_date: Option<&str>,
+    ) -> Result<Vec<LogLine>> {
         #[derive(Deserialize)]
         struct Data { #[serde(rename = "deploymentLogs")] logs: Vec<LogLine> }
         let q = r#"
-            query($id: String!, $limit: Int) {
-              deploymentLogs(deploymentId: $id, limit: $limit) {
+            query($id: String!, $limit: Int, $start: DateTime) {
+              deploymentLogs(deploymentId: $id, limit: $limit, startDate: $start) {
                 message timestamp severity
               }
             }
         "#;
         let data: Data = self
-            .graphql(q, json!({ "id": deployment_id, "limit": limit }))
+            .graphql(
+                q,
+                json!({ "id": deployment_id, "limit": limit, "start": start_date }),
+            )
             .await?;
         Ok(data.logs)
     }
