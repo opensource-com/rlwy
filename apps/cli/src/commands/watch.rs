@@ -86,9 +86,13 @@ pub async fn run(query: Option<String>, interval_secs: u64, pick: bool) -> Resul
     Ok(())
 }
 
-pub async fn logs(deployment_id: String) -> Result<()> {
+pub async fn logs(query: Option<String>, pick: bool) -> Result<()> {
     let token = config::require_token()?;
     let api = Railway::new(token)?;
+
+    let deployment_id = resolve_deployment_for_logs(&api, query.as_deref(), pick).await?;
+    println!("{} deployment {}", "══".bright_magenta(), deployment_id.dimmed());
+    println!();
 
     println!("{} build logs", "══".bright_magenta());
     let build = api
@@ -239,4 +243,52 @@ fn fuzzy_pick(options: &[(String, String)], default_idx: usize) -> Result<String
         .interact()
         .context("reading selection")?;
     Ok(options[sel].1.clone())
+}
+
+async fn resolve_deployment_for_logs(
+    api: &Railway,
+    query: Option<&str>,
+    force_pick: bool,
+) -> Result<String> {
+    if !force_pick {
+        if let Some(q) = query.map(str::trim).filter(|s| !s.is_empty()) {
+            if looks_like_uuid(q) {
+                // Check if the UUID is a known service; if so, use its latest deployment.
+                // Otherwise treat the UUID as a raw deployment id.
+                let projects = api.projects().await?;
+                for p in &projects {
+                    for s in p.services() {
+                        if s.id == q {
+                            let _ = config::remember_service(q);
+                            return latest_deployment_id(api, q).await;
+                        }
+                    }
+                }
+                return Ok(q.to_string());
+            }
+            let service_id = resolve_by_name(api, q).await?;
+            let _ = config::remember_service(&service_id);
+            return latest_deployment_id(api, &service_id).await;
+        }
+        if let Some(id) = config::load().ok().and_then(|c| c.last_service_id) {
+            println!(
+                "{} resuming last service {} (pass {} to pick another)",
+                "↻".cyan(),
+                id.cyan(),
+                "--pick".bold()
+            );
+            return latest_deployment_id(api, &id).await;
+        }
+    }
+    let service_id = pick_service_interactively(api).await?;
+    let _ = config::remember_service(&service_id);
+    latest_deployment_id(api, &service_id).await
+}
+
+async fn latest_deployment_id(api: &Railway, service_id: &str) -> Result<String> {
+    let dep = api
+        .latest_deployment(service_id)
+        .await?
+        .ok_or_else(|| anyhow!("no deployments found for service {service_id}"))?;
+    Ok(dep.id)
 }

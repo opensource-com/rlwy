@@ -11,6 +11,16 @@ the CLI will actually notice after upgrading. Group entries under **Added**,
 
 ## [Unreleased]
 
+### Changed
+- `rlwy logs` now accepts a service name / id / `project/service` query
+  (same syntax as `rlwy watch`) and fetches the latest deployment's logs
+  for that service. Passing a bare deployment UUID still works — if the
+  UUID matches a known service we use its latest deployment, otherwise we
+  treat it as a raw deployment id. Running `rlwy logs` with no args
+  resumes the last-picked service; `--pick` forces the picker. Before,
+  `rlwy logs <service-uuid>` failed with "Deployment not found" because
+  the argument was taken literally as a deployment id.
+
 ## [0.2.0] - 2026-04-18
 
 ### Changed

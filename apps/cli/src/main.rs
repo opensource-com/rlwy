@@ -43,9 +43,13 @@ enum Cmd {
         #[arg(long)]
         pick: bool,
     },
-    /// Print build + deploy logs for a specific deployment
+    /// Print build + deploy logs. QUERY is a service name/id/`project/service`,
+    /// or a bare deployment id. Omit to use the last-picked service.
     Logs {
-        deployment_id: String,
+        query: Option<String>,
+        /// Always open the picker
+        #[arg(long)]
+        pick: bool,
     },
     /// Download and install the latest rlwy release
     Upgrade,
@@ -63,7 +67,7 @@ async fn main() -> anyhow::Result<()> {
         Cmd::Whoami => commands::login::whoami().await,
         Cmd::Ls { query } => commands::list::run(query).await,
         Cmd::Watch { query, interval, pick } => commands::watch::run(query, interval, pick).await,
-        Cmd::Logs { deployment_id } => commands::watch::logs(deployment_id).await,
+        Cmd::Logs { query, pick } => commands::watch::logs(query, pick).await,
         Cmd::Upgrade => commands::upgrade::run().await,
     }
 }
