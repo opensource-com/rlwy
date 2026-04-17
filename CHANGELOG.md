@@ -21,6 +21,9 @@ the CLI will actually notice after upgrading. Group entries under **Added**,
 - `rlwy ls` accepts an optional project-name filter
   (`rlwy ls uft` shows only projects whose name contains "uft",
   case-insensitive). Errors out if no project matches.
+- `rlwy ls` table now includes an AUTHOR column showing who made the
+  commit for the latest deployment (pulled from Railway's deployment
+  metadata, truncated to 18 chars).
 - `rlwy watch` picker is now a fuzzy search — type any part of a service
   or project name to narrow the list, arrow keys + Enter to pick.
 - `rlwy watch` accepts a query arg: a service id (UUID), a service name

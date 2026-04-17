@@ -7,6 +7,7 @@ use tabled::settings::Style;
 use tabled::{Table, Tabled};
 
 const MESSAGE_MAX: usize = 56;
+const AUTHOR_MAX: usize = 18;
 
 #[derive(Tabled)]
 struct Row {
@@ -16,6 +17,8 @@ struct Row {
     status: String,
     #[tabled(rename = "COMMIT")]
     commit: String,
+    #[tabled(rename = "AUTHOR")]
+    author: String,
     #[tabled(rename = "MESSAGE")]
     message: String,
 }
@@ -64,14 +67,16 @@ pub async fn run(query: Option<String>) -> Result<()> {
         let rows: Vec<Row> = services
             .iter()
             .map(|svc| {
-                let (status, commit, message) = match svc.latest_deployment() {
+                let (status, commit, author, message) = match svc.latest_deployment() {
                     Some(d) => (
                         ui::color_status(d.status).to_string(),
                         commit_cell(d),
+                        author_cell(d),
                         message_cell(d),
                     ),
                     None => (
                         "NO DEPLOYMENTS".dimmed().to_string(),
+                        em_dash(),
                         em_dash(),
                         em_dash(),
                     ),
@@ -80,6 +85,7 @@ pub async fn run(query: Option<String>) -> Result<()> {
                     service: svc.name.clone(),
                     status,
                     commit,
+                    author,
                     message,
                 }
             })
@@ -119,16 +125,25 @@ fn commit_cell(d: &Deployment) -> String {
 
 fn message_cell(d: &Deployment) -> String {
     match d.commit_message() {
-        Some(m) if !m.trim().is_empty() => truncate(m.lines().next().unwrap_or("").trim()),
+        Some(m) if !m.trim().is_empty() => {
+            truncate(m.lines().next().unwrap_or("").trim(), MESSAGE_MAX)
+        }
         _ => em_dash(),
     }
 }
 
-fn truncate(s: &str) -> String {
-    if s.chars().count() <= MESSAGE_MAX {
+fn author_cell(d: &Deployment) -> String {
+    match d.commit_author() {
+        Some(a) if !a.trim().is_empty() => truncate(a.trim(), AUTHOR_MAX),
+        _ => em_dash(),
+    }
+}
+
+fn truncate(s: &str, max: usize) -> String {
+    if s.chars().count() <= max {
         return s.to_string();
     }
-    let head: String = s.chars().take(MESSAGE_MAX - 1).collect();
+    let head: String = s.chars().take(max - 1).collect();
     format!("{head}…")
 }
 
@@ -147,12 +162,14 @@ mod tests {
                 service: "api".into(),
                 status: "SUCCESS".green().to_string(),
                 commit: "a1b2c3d".cyan().to_string(),
+                author: "Alice".into(),
                 message: "fix: retry on 502".into(),
             },
             Row {
                 service: "worker".into(),
                 status: "BUILDING".cyan().to_string(),
                 commit: "4e5f6a7".cyan().to_string(),
+                author: "Bob".into(),
                 message: "feat: add queue metrics".into(),
             },
         ];

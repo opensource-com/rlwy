@@ -249,6 +249,10 @@ impl Deployment {
     pub fn commit_message(&self) -> Option<&str> {
         self.meta.as_ref()?.get("commitMessage")?.as_str()
     }
+
+    pub fn commit_author(&self) -> Option<&str> {
+        self.meta.as_ref()?.get("commitAuthor")?.as_str()
+    }
 }
 
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq)]
