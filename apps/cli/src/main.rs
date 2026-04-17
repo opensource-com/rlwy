@@ -21,6 +21,19 @@ enum EnvCmd {
         #[arg(long)]
         keys_only: bool,
     },
+    /// Print a single variable's value to stdout (scripting: `export X=$(rlwy env get … X)`)
+    Get {
+        /// Variable name to look up
+        name: String,
+        /// Service id, name, or `project/service`. Omit to use the last choice
+        query: Option<String>,
+        /// Always open the picker
+        #[arg(long)]
+        pick: bool,
+        /// Target a specific environment by name
+        #[arg(long)]
+        env: Option<String>,
+    },
 }
 
 #[derive(Parser)]
@@ -141,6 +154,9 @@ async fn main() -> anyhow::Result<()> {
         Cmd::Env { action } => match action {
             EnvCmd::Ls { query, pick, env, keys_only } => {
                 commands::env::ls(query, pick, env, keys_only).await
+            }
+            EnvCmd::Get { name, query, pick, env } => {
+                commands::env::get(name, query, pick, env).await
             }
         },
         Cmd::Open { query, pick, env } => commands::open::run(query, pick, env).await,

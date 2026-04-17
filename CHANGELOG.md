@@ -12,6 +12,12 @@ the CLI will actually notice after upgrading. Group entries under **Added**,
 ## [Unreleased]
 
 ### Added
+- `rlwy env get NAME [QUERY]`: prints a single variable's raw value to
+  stdout — designed for shell scripting
+  (`export DB_URL=$(rlwy env get DATABASE_URL frontend --env staging)`).
+  Exits non-zero with a clear error if the variable doesn't exist on the
+  resolved service/env. Same resolution flags as the rest
+  (`--pick`, `--env`, last-service memory).
 - `rlwy env ls [QUERY]`: read-only listing of a service's environment
   variables, rendered as a sorted NAME / VALUE table (values truncated
   to 100 chars / first line). `--env <name>` targets a specific env;

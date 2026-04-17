@@ -16,6 +16,50 @@ struct EnvRow {
     value: String,
 }
 
+pub async fn get(
+    name: String,
+    query: Option<String>,
+    pick: bool,
+    env: Option<String>,
+) -> Result<()> {
+    let token = config::require_token()?;
+    let api = Railway::new(token)?;
+
+    let service_id = watch::resolve_service(&api, query.as_deref(), pick).await?;
+    let _ = config::remember_service(&service_id);
+
+    let projects = api.projects().await?;
+    let ctx = find_ctx(&projects, &service_id, env.as_deref())?;
+
+    let Some(env_id) = ctx.env_id else {
+        bail!(
+            "could not determine environment for service '{}'. Pass --env <name> explicitly.",
+            ctx.service_name
+        );
+    };
+
+    let vars = api
+        .variables(&ctx.project_id, &env_id, Some(&service_id))
+        .await?;
+
+    match vars.get(&name) {
+        Some(value) => {
+            println!("{value}");
+            Ok(())
+        }
+        None => bail!(
+            "variable '{}' not found on {} › {} {}",
+            name,
+            ctx.project_name,
+            ctx.service_name,
+            match &ctx.env_name {
+                Some(n) => format!("[{n}]"),
+                None => String::new(),
+            }
+        ),
+    }
+}
+
 pub async fn ls(
     query: Option<String>,
     pick: bool,
