@@ -238,7 +238,7 @@ fn parse_since(raw: &str) -> Result<chrono::DateTime<chrono::Utc>> {
     Ok(chrono::Utc::now() - dur)
 }
 
-async fn resolve_service(
+pub(crate) async fn resolve_service(
     api: &Railway,
     query: Option<&str>,
     force_pick: bool,

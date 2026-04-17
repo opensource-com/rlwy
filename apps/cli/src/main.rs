@@ -63,6 +63,17 @@ enum Cmd {
         #[arg(long, default_value_t = 2)]
         interval: u64,
     },
+    /// Trigger a new deployment by redeploying the latest one
+    Redeploy {
+        /// Service id, name, or `project/service`. Omit to use the last choice
+        query: Option<String>,
+        /// Always open the picker
+        #[arg(long)]
+        pick: bool,
+        /// Don't tail the new deployment after triggering
+        #[arg(long)]
+        no_watch: bool,
+    },
     /// Download and install the latest rlwy release
     Upgrade,
 }
@@ -81,6 +92,9 @@ async fn main() -> anyhow::Result<()> {
         Cmd::Watch { query, interval, pick } => commands::watch::run(query, interval, pick).await,
         Cmd::Logs { query, pick, follow, since, grep, interval } => {
             commands::watch::logs(query, pick, follow, since, grep, interval).await
+        }
+        Cmd::Redeploy { query, pick, no_watch } => {
+            commands::redeploy::run(query, pick, no_watch).await
         }
         Cmd::Upgrade => commands::upgrade::run().await,
     }

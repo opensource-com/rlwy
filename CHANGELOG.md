@@ -22,6 +22,13 @@ the CLI will actually notice after upgrading. Group entries under **Added**,
   the argument was taken literally as a deployment id.
 
 ### Added
+- `rlwy redeploy [QUERY]`: re-triggers a service's latest deployment
+  (Railway's `deploymentRedeploy` mutation) and tails the resulting new
+  deployment until it reaches a terminal status, just like `rlwy watch`.
+  Same resolution rules as `watch`/`logs`: accepts a service name, id,
+  or `project/service`; uses the last-picked service with no args;
+  `--pick` forces the picker. Pass `--no-watch` to trigger and exit
+  immediately instead of tailing.
 - `rlwy logs -f` / `--follow`: after printing the initial batch, polls
   Railway's `deploymentLogs` every `--interval` seconds (default 2) and
   streams new lines until ctrl-c. Deduplicates against the last ~128

@@ -127,6 +127,20 @@ impl Railway {
         Ok(None)
     }
 
+    pub async fn redeploy_deployment(&self, deployment_id: &str) -> Result<Deployment> {
+        #[derive(Deserialize)]
+        struct Data { #[serde(rename = "deploymentRedeploy")] dep: Deployment }
+        let q = r#"
+            mutation($id: String!) {
+              deploymentRedeploy(id: $id) {
+                id status createdAt staticUrl meta
+              }
+            }
+        "#;
+        let data: Data = self.graphql(q, json!({ "id": deployment_id })).await?;
+        Ok(data.dep)
+    }
+
     pub async fn deployment(&self, id: &str) -> Result<Deployment> {
         #[derive(Deserialize)]
         struct Data { deployment: Deployment }
