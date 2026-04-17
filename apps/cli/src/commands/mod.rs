@@ -3,5 +3,6 @@ pub mod list;
 pub mod login;
 pub mod open;
 pub mod redeploy;
+pub mod status;
 pub mod upgrade;
 pub mod watch;

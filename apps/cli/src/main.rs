@@ -130,6 +130,14 @@ enum Cmd {
         #[arg(long)]
         env: Option<String>,
     },
+    /// Quick health check: summary + any broken services. Exits non-zero on failures.
+    Status {
+        /// Optional project-name filter
+        project: Option<String>,
+        /// Also list services that are building/deploying/queued
+        #[arg(long)]
+        all: bool,
+    },
     /// Download and install the latest rlwy release
     Upgrade,
 }
@@ -163,6 +171,7 @@ async fn main() -> anyhow::Result<()> {
         Cmd::Redeploy { query, pick, no_watch, env } => {
             commands::redeploy::run(query, pick, no_watch, env).await
         }
+        Cmd::Status { project, all } => commands::status::run(project, all).await,
         Cmd::Upgrade => commands::upgrade::run().await,
     }
 }

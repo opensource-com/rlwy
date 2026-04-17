@@ -41,6 +41,7 @@ Also available as `rlwycli`, `railwaycli`, and `railwycli` — same binary, pick
 | `rlwy env get NAME [QUERY]`| Print a single variable's value to stdout. Example: `export DB_URL=$(rlwy env get DATABASE_URL frontend)`. Exits non-zero if the variable is missing. |
 | `rlwy open [QUERY]`        | Open the Railway dashboard for a service in your browser. Same resolution/`--env` flags as the other commands. |
 | `rlwy redeploy [QUERY]`    | Re-trigger the latest deployment of a service and tail it. Same resolution as `watch`/`logs`; add `--no-watch` to just trigger. |
+| `rlwy status [PROJECT]`    | One-line health summary + any broken (FAILED/CRASHED) services. Exits non-zero when anything is broken — good for CI or shell prompts. `--all` also lists in-progress deploys. |
 | `rlwy upgrade`             | Fetch the latest GitHub release and replace your binary    |
 
 ## Dev

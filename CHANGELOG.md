@@ -12,6 +12,11 @@ the CLI will actually notice after upgrading. Group entries under **Added**,
 ## [Unreleased]
 
 ### Added
+- `rlwy status [PROJECT]`: one-line health summary (`✓ 27/30 services up`)
+  plus a list of any FAILED/CRASHED services, suitable for shell prompts
+  or CI. Exits non-zero when anything is broken. Optional project-name
+  filter, and `--all` also lists services that are building/deploying/queued.
+  Uses the single `projects()` call we already cache — no extra API hit.
 - `rlwy env get NAME [QUERY]`: prints a single variable's raw value to
   stdout — designed for shell scripting
   (`export DB_URL=$(rlwy env get DATABASE_URL frontend --env staging)`).
