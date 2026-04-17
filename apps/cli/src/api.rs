@@ -198,6 +198,38 @@ impl Railway {
         Ok(data.projects.into_vec())
     }
 
+    pub async fn variables(
+        &self,
+        project_id: &str,
+        env_id: &str,
+        service_id: Option<&str>,
+    ) -> Result<std::collections::BTreeMap<String, String>> {
+        #[derive(Deserialize)]
+        struct Data {
+            variables: std::collections::BTreeMap<String, String>,
+        }
+        let q = r#"
+            query($projectId: String!, $environmentId: String!, $serviceId: String) {
+              variables(
+                projectId: $projectId,
+                environmentId: $environmentId,
+                serviceId: $serviceId
+              )
+            }
+        "#;
+        let data: Data = self
+            .graphql(
+                q,
+                json!({
+                    "projectId": project_id,
+                    "environmentId": env_id,
+                    "serviceId": service_id,
+                }),
+            )
+            .await?;
+        Ok(data.variables)
+    }
+
     pub async fn redeploy_deployment(&self, deployment_id: &str) -> Result<Deployment> {
         #[derive(Deserialize)]
         struct Data { #[serde(rename = "deploymentRedeploy")] dep: Deployment }

@@ -5,6 +5,24 @@ mod ui;
 
 use clap::{Parser, Subcommand};
 
+#[derive(Subcommand)]
+enum EnvCmd {
+    /// List variables for a service in an environment
+    Ls {
+        /// Service id, name, or `project/service`. Omit to use the last choice
+        query: Option<String>,
+        /// Always open the picker
+        #[arg(long)]
+        pick: bool,
+        /// Target a specific environment by name (defaults to the latest deployment's env)
+        #[arg(long)]
+        env: Option<String>,
+        /// Print only variable names, one per line (pipe-friendly)
+        #[arg(long)]
+        keys_only: bool,
+    },
+}
+
 #[derive(Parser)]
 #[command(
     name = "rlwy",
@@ -69,6 +87,11 @@ enum Cmd {
         #[arg(long)]
         env: Option<String>,
     },
+    /// Read environment variables
+    Env {
+        #[command(subcommand)]
+        action: EnvCmd,
+    },
     /// Open the Railway dashboard for a service in your browser
     Open {
         /// Service id, name, or `project/service`. Omit to use the last choice
@@ -115,6 +138,11 @@ async fn main() -> anyhow::Result<()> {
         Cmd::Logs { query, pick, follow, since, grep, interval, env } => {
             commands::watch::logs(query, pick, follow, since, grep, interval, env).await
         }
+        Cmd::Env { action } => match action {
+            EnvCmd::Ls { query, pick, env, keys_only } => {
+                commands::env::ls(query, pick, env, keys_only).await
+            }
+        },
         Cmd::Open { query, pick, env } => commands::open::run(query, pick, env).await,
         Cmd::Redeploy { query, pick, no_watch, env } => {
             commands::redeploy::run(query, pick, no_watch, env).await

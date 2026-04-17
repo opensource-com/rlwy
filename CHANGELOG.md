@@ -12,6 +12,13 @@ the CLI will actually notice after upgrading. Group entries under **Added**,
 ## [Unreleased]
 
 ### Added
+- `rlwy env ls [QUERY]`: read-only listing of a service's environment
+  variables, rendered as a sorted NAME / VALUE table (values truncated
+  to 100 chars / first line). `--env <name>` targets a specific env;
+  defaults to the latest deployment's env. `--keys-only` prints just
+  the names one per line for piping (`rlwy env ls api --keys-only | grep SECRET`).
+  Uses Railway's `variables(projectId, environmentId, serviceId)` query
+  which returns the full set visible to the service (own + shared).
 - `rlwy open [QUERY]`: opens the Railway dashboard for a service in your
   default browser (uses the `open` crate, works on Linux/macOS/Windows).
   Same resolution rules as `watch`/`logs`/`redeploy`; `--env <name>`
