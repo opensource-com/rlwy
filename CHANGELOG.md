@@ -11,6 +11,14 @@ the CLI will actually notice after upgrading. Group entries under **Added**,
 
 ## [Unreleased]
 
+### Added
+- `rlwy open [QUERY]`: opens the Railway dashboard for a service in your
+  default browser (uses the `open` crate, works on Linux/macOS/Windows).
+  Same resolution rules as `watch`/`logs`/`redeploy`; `--env <name>`
+  adds `environmentId` to the URL so the right environment is selected.
+  Override the base URL via `RLWY_DASHBOARD_URL` if you run a self-hosted
+  Railway instance.
+
 ## [0.3.0] - 2026-04-18
 
 ### Changed

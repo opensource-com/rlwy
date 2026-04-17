@@ -24,6 +24,7 @@ chrono = { version = "0.4", default-features = false, features = ["clock", "serd
 dialoguer = { version = "0.12", default-features = false, features = ["password", "fuzzy-select"] }
 dotenvy = "0.15"
 tabled = { version = "0.17", features = ["ansi"] }
+open = "5"
 
 [profile.release]
 lto = "thin"

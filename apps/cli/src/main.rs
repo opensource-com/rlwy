@@ -69,6 +69,17 @@ enum Cmd {
         #[arg(long)]
         env: Option<String>,
     },
+    /// Open the Railway dashboard for a service in your browser
+    Open {
+        /// Service id, name, or `project/service`. Omit to use the last choice
+        query: Option<String>,
+        /// Always open the picker
+        #[arg(long)]
+        pick: bool,
+        /// Target a specific environment by name
+        #[arg(long)]
+        env: Option<String>,
+    },
     /// Trigger a new deployment by redeploying the latest one
     Redeploy {
         /// Service id, name, or `project/service`. Omit to use the last choice
@@ -104,6 +115,7 @@ async fn main() -> anyhow::Result<()> {
         Cmd::Logs { query, pick, follow, since, grep, interval, env } => {
             commands::watch::logs(query, pick, follow, since, grep, interval, env).await
         }
+        Cmd::Open { query, pick, env } => commands::open::run(query, pick, env).await,
         Cmd::Redeploy { query, pick, no_watch, env } => {
             commands::redeploy::run(query, pick, no_watch, env).await
         }
