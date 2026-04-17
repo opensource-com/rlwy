@@ -11,6 +11,8 @@ the CLI will actually notice after upgrading. Group entries under **Added**,
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-04-18
+
 ### Added
 - `rlwy completions <SHELL>`: prints a bash/zsh/fish/powershell/elvish
   completion script to stdout (clap_complete generates from the actual
