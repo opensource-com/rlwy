@@ -7,3 +7,5 @@ target
 .DS_Store
 .env
 .env.local
+packages/rlwy/bin/rlwy
+packages/rlwy/bin/rlwy.exe

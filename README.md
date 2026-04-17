@@ -46,6 +46,18 @@ npx nx build cli            # cargo build --release
 npx nx build rlwy           # compiles the npm wrapper
 ```
 
+### Use your local build as the global `rlwy`
+
+```bash
+npm run dev:link            # build + symlink binary + npm link (run once)
+npm run dev:refresh         # rebuild Rust after code changes (auto-updates the link)
+npm run dev:unlink          # remove the global link
+```
+
+After `dev:link`, the commands `rlwy`, `rlwycli`, `railwaycli`, and `railwycli`
+all point at `apps/cli/target/release/rlwy` via a symlink — so every subsequent
+`cargo build --release` (or `npm run dev:refresh`) is picked up immediately.
+
 - `apps/cli`       — Rust binary (clap + reqwest + indicatif)
 - `packages/rlwy`  — npm wrapper; `postinstall` downloads the matching binary
 - `install.sh` / `install.ps1` — standalone installers that pull from GitHub Releases

@@ -8,7 +8,12 @@
   "scripts": {
     "build": "nx run-many -t build",
     "build:cli": "nx build cli",
-    "build:wrapper": "nx build rlwy"
+    "build:wrapper": "nx build rlwy",
+    "dev:link": "npm run build && npm run dev:symlink && npm run dev:global",
+    "dev:symlink": "mkdir -p packages/rlwy/bin && ln -sf ../../../apps/cli/target/release/rlwy packages/rlwy/bin/rlwy",
+    "dev:global": "cd packages/rlwy && RLWY_SKIP_INSTALL=1 npm link",
+    "dev:refresh": "npm run build:cli",
+    "dev:unlink": "cd packages/rlwy && npm unlink -g railwaycli"
   },
   "devDependencies": {
     "nx": "latest",
