@@ -11,6 +11,8 @@ the CLI will actually notice after upgrading. Group entries under **Added**,
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-04-18
+
 ### Changed
 - `rlwy ls` now renders each project as its own rounded table under a
   project header (name + id), with SERVICE / STATUS / COMMIT / MESSAGE
