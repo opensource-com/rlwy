@@ -1,18 +1,17 @@
 use crate::api::{DeploymentStatus, Railway};
 use crate::config;
 use crate::ui;
-use anyhow::{Context, Result, anyhow};
+use anyhow::{Context, Result, anyhow, bail};
 use colored::Colorize;
+use dialoguer::FuzzySelect;
 use std::time::Duration;
 
-pub async fn run(service_id: Option<String>, interval_secs: u64) -> Result<()> {
+pub async fn run(query: Option<String>, interval_secs: u64, pick: bool) -> Result<()> {
     let token = config::require_token()?;
     let api = Railway::new(token)?;
 
-    let service_id = match service_id {
-        Some(id) => id,
-        None => pick_service_interactively(&api).await?,
-    };
+    let service_id = resolve_service(&api, query.as_deref(), pick).await?;
+    let _ = config::remember_service(&service_id);
 
     let Some(mut current) = api.latest_deployment(&service_id).await? else {
         println!(
@@ -120,36 +119,124 @@ pub async fn logs(deployment_id: String) -> Result<()> {
     Ok(())
 }
 
+async fn resolve_service(
+    api: &Railway,
+    query: Option<&str>,
+    force_pick: bool,
+) -> Result<String> {
+    if !force_pick {
+        if let Some(q) = query {
+            let trimmed = q.trim();
+            if !trimmed.is_empty() {
+                if looks_like_uuid(trimmed) {
+                    return Ok(trimmed.to_string());
+                }
+                return resolve_by_name(api, trimmed).await;
+            }
+        } else if let Some(id) = config::load().ok().and_then(|c| c.last_service_id) {
+            println!(
+                "{} resuming last service {} (pass {} to pick another)",
+                "↻".cyan(),
+                id.cyan(),
+                "--pick".bold()
+            );
+            return Ok(id);
+        }
+    }
+
+    pick_service_interactively(api).await
+}
+
+fn looks_like_uuid(s: &str) -> bool {
+    s.len() == 36
+        && s.chars().enumerate().all(|(i, c)| match i {
+            8 | 13 | 18 | 23 => c == '-',
+            _ => c.is_ascii_hexdigit(),
+        })
+}
+
+async fn resolve_by_name(api: &Railway, query: &str) -> Result<String> {
+    let (proj_q, svc_q) = match query.split_once('/') {
+        Some((p, s)) => (Some(p.trim()), s.trim()),
+        None => (None, query),
+    };
+    if svc_q.is_empty() {
+        bail!("service name is empty");
+    }
+    let proj_q_lower = proj_q.map(|s| s.to_ascii_lowercase());
+    let svc_q_lower = svc_q.to_ascii_lowercase();
+
+    let projects = api.projects().await?;
+    let mut matches: Vec<(String, String, String)> = Vec::new();
+    for p in &projects {
+        if let Some(pf) = &proj_q_lower
+            && !p.name.to_ascii_lowercase().contains(pf)
+        {
+            continue;
+        }
+        for s in p.services() {
+            if s.name.to_ascii_lowercase().contains(&svc_q_lower) {
+                matches.push((p.name.clone(), s.name.clone(), s.id.clone()));
+            }
+        }
+    }
+
+    match matches.len() {
+        0 => Err(anyhow!("no service matches '{query}'")),
+        1 => {
+            let (proj, svc, id) = matches.pop().expect("len == 1");
+            println!(
+                "{} matched {} › {}",
+                "→".dimmed(),
+                proj.bold(),
+                svc.bold()
+            );
+            Ok(id)
+        }
+        _ => {
+            println!(
+                "{} {} services match '{}', pick one:",
+                "?".yellow().bold(),
+                matches.len(),
+                query
+            );
+            let options: Vec<(String, String)> = matches
+                .into_iter()
+                .map(|(p, s, id)| (format!("{p}  ›  {s}"), id))
+                .collect();
+            fuzzy_pick(&options, 0)
+        }
+    }
+}
+
 async fn pick_service_interactively(api: &Railway) -> Result<String> {
     let projects = api.projects().await?;
+    let last_id = config::load().ok().and_then(|c| c.last_service_id);
+
     let mut options: Vec<(String, String)> = Vec::new();
+    let mut default_idx = 0usize;
     for p in &projects {
         for s in p.services() {
-            options.push((
-                format!("{}  ›  {}", p.name, s.name),
-                s.id.clone(),
-            ));
+            let label = format!("{}  ›  {}", p.name, s.name);
+            if last_id.as_deref() == Some(&s.id) {
+                default_idx = options.len();
+            }
+            options.push((label, s.id.clone()));
         }
     }
     if options.is_empty() {
         return Err(anyhow!("no services found for this token"));
     }
+    fuzzy_pick(&options, default_idx)
+}
 
-    println!("pick a service:");
-    for (i, (label, _)) in options.iter().enumerate() {
-        println!("  {:>2}. {}", i + 1, label);
-    }
-    eprint!("{} ", "›".cyan().bold());
-    let mut buf = String::new();
-    std::io::stdin()
-        .read_line(&mut buf)
+fn fuzzy_pick(options: &[(String, String)], default_idx: usize) -> Result<String> {
+    let items: Vec<&str> = options.iter().map(|(label, _)| label.as_str()).collect();
+    let sel = FuzzySelect::new()
+        .with_prompt("pick a service (type to filter)")
+        .default(default_idx.min(items.len().saturating_sub(1)))
+        .items(&items)
+        .interact()
         .context("reading selection")?;
-    let idx: usize = buf
-        .trim()
-        .parse()
-        .map_err(|_| anyhow!("enter a number between 1 and {}", options.len()))?;
-    let choice = options
-        .get(idx.wrapping_sub(1))
-        .ok_or_else(|| anyhow!("selection out of range"))?;
-    Ok(choice.1.clone())
+    Ok(options[sel].1.clone())
 }

@@ -7,6 +7,15 @@ use std::path::PathBuf;
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Config {
     pub token: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub last_service_id: Option<String>,
+}
+
+pub fn remember_service(id: &str) -> Result<()> {
+    let mut cfg = load().unwrap_or_default();
+    cfg.last_service_id = Some(id.to_string());
+    save(&cfg)?;
+    Ok(())
 }
 
 fn config_path() -> Result<PathBuf> {

@@ -18,6 +18,15 @@ the CLI will actually notice after upgrading. Group entries under **Added**,
   commit message for the latest deployment, pulled from Railway's
   deployment metadata. Per-project tables make service-to-project
   grouping unambiguous, especially across many projects.
+- `rlwy watch` picker is now a fuzzy search — type any part of a service
+  or project name to narrow the list, arrow keys + Enter to pick.
+- `rlwy watch` accepts a query arg: a service id (UUID), a service name
+  (`rlwy watch frontend`), or `project/service` (`rlwy watch uft/frontend`).
+  Unique matches skip the picker entirely; ambiguous matches show a
+  narrowed picker.
+- `rlwy watch` with no args resumes the last-picked service. Pass `--pick`
+  to force the picker and override the remembered choice. The last choice
+  is stored in the existing `config.json`.
 
 ### Added
 - `rlwy upgrade` command: checks the latest GitHub release, downloads the

@@ -31,11 +31,14 @@ enum Cmd {
     Ls,
     /// Watch the active deployment of a service
     Watch {
-        /// Service id. If omitted, you'll be asked to pick one
-        service_id: Option<String>,
+        /// Service id, name, or `project/service`. Omit to use the last choice
+        query: Option<String>,
         /// Poll interval in seconds
         #[arg(long, default_value_t = 3)]
         interval: u64,
+        /// Always open the picker, even if a last service is remembered
+        #[arg(long)]
+        pick: bool,
     },
     /// Print build + deploy logs for a specific deployment
     Logs {
@@ -56,7 +59,7 @@ async fn main() -> anyhow::Result<()> {
         Cmd::Login { token } => commands::login::run(token).await,
         Cmd::Whoami => commands::login::whoami().await,
         Cmd::Ls => commands::list::run().await,
-        Cmd::Watch { service_id, interval } => commands::watch::run(service_id, interval).await,
+        Cmd::Watch { query, interval, pick } => commands::watch::run(query, interval, pick).await,
         Cmd::Logs { deployment_id } => commands::watch::logs(deployment_id).await,
         Cmd::Upgrade => commands::upgrade::run().await,
     }

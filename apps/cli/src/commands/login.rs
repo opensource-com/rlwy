@@ -1,5 +1,5 @@
 use crate::api::Railway;
-use crate::config::{self, Config};
+use crate::config;
 use anyhow::{Context, Result};
 use colored::Colorize;
 
@@ -28,7 +28,8 @@ pub async fn run(token: Option<String>) -> Result<()> {
         .await
         .context("validating token against Railway")?;
 
-    let cfg = Config { token: Some(token) };
+    let mut cfg = config::load().unwrap_or_default();
+    cfg.token = Some(token);
     let path = config::save(&cfg)?;
 
     println!(
